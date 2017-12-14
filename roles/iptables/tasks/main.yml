@@ -1,0 +1,37 @@
+---
+
+- name: install mailutils
+  package: name=mailutils state=present
+  when: ansible_os_family == "Debian"
+
+- name: install mailx
+  package: name=mailx state=present
+  when: ansible_os_family == "RedHat"
+
+- name: install fail2ban
+  package: name=fail2ban state=present
+
+- name: make fail2ban persistent
+  service: name=fail2ban enabled=yes state=started
+
+- name: push specific fail2ban configuration files
+  template: src={{ item }}.j2 dest=/etc/fail2ban/{{ item }}.local
+  with_items:
+    - jail
+    - action.d/mail-whois
+    - action.d/mail-whois-lines
+  when: ansible_os_family == "Debian"
+  notify: restart fail2ban
+
+- name: create iptables configuration
+  template: src=iptables.conf.j2 dest=/etc/iptables.conf owner=root group=root mode=0700
+  notify: 
+    - restore-iptables
+    - restart fail2ban
+
+- name: make iptables configuration persistent
+  lineinfile:
+    name: /etc/rc.local
+    insertbefore: "^exit 0"
+    line: "iptables-restore /etc/iptables.conf"
+

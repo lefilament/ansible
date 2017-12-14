@@ -1,0 +1,360 @@
+---
+
+#--------------------------------------------------
+# System Settings
+#--------------------------------------------------
+- name: Create odoo system group
+  group:
+    name: "{{ OE_USER }}"
+    system: yes
+  tags: preinstall
+
+- name: Create ODOO system user
+  user:
+    system: yes
+    name: "{{ OE_USER }}"
+    group: "{{ OE_USER }}"
+  tags: preinstall
+
+- name: Create Log directory
+  file:
+    name: /var/log/{{ OE_USER }}
+    state: directory
+    owner: "{{ OE_USER }}"
+    group: "{{ OE_USER }}"
+  tags: preinstall
+
+- name: Install tool packages
+  apt: name="{{ item }}" force="yes"
+  with_items:
+    - wget
+    - git
+    - bzr
+    - bzrtools
+    - python-pip
+    - postgresql
+    - postgresql-server-dev-all
+    - python-all-dev
+    - python-imaging
+    - python-dev
+    - python-setuptools
+    - libxml2-dev
+    - libxslt1-dev
+    - libevent-dev
+    - libsasl2-dev
+    - libldap2-dev
+    - libffi-dev
+    - pkg-config
+    - libtiff5-dev
+    - libjpeg8-dev
+    - libjpeg-dev
+    - zlib1g-dev
+    - libfreetype6-dev
+    - liblcms2-dev
+    - liblcms2-utils
+    - libwebp-dev
+    - tcl8.6-dev
+    - tk8.6-dev
+    - python-tk
+    - libyaml-dev
+    - fontconfig
+    - node-less
+    - nodejs
+    - nodejs-legacy
+  tags: preinstall
+
+#- name: download wkhtmltox
+#  get_url: url="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz" dest="/root"
+#  tags: preinstall
+
+- name: Download and extract wktmltox from archive
+  unarchive: src="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz" remote_src=yes dest="/"
+  register: tar_has_been_run
+  tags: preinstall
+
+- name: Remove any old version of wkhtmltox
+  apt: name=wkhtmltox state=absent purge=yes force=yes
+  when: tar_has_been_run.skipped is not defined
+  tags: preinstall
+
+- name: Copy wkhtml to pdf in /usr/bin
+  copy: src="/wkhtmltox/bin/wkhtmltopdf" dest="/usr/bin/wkhtmltopdf" remote_src="True" mode=0755
+  when: tar_has_been_run.skipped is not defined
+  tags: preinstall
+
+- name: Copy wkhtml to image in /usr/bin
+  copy: src="/wkhtmltox/bin/wkhtmltoimage" dest="/usr/bin/wkhtmltoimage" remote_src="True" mode=0755
+  when: tar_has_been_run.skipped is not defined
+  tags: preinstall
+
+- name: Install npm package
+  apt: name="npm"
+  tags: preinstall
+
+- name: Install less
+  npm: global="yes" name="less"
+  tags: preinstall
+
+- name: Install less-plugin-clean-css
+  npm: global="yes" name="less-plugin-clean-css"
+  tags: preinstall
+
+#--------------------------------------------------
+# Configure PostgreSQL Server
+#--------------------------------------------------
+- name: Creating the ODOO PostgreSQL User 
+  postgresql_user: name="{{ OE_USER }}" role_attr_flags="CREATEDB,NOSUPERUSER"
+  become: yes
+  become_user: postgres
+  tags: preinstall
+
+#--------------------------------------------------
+# Install Bank export module
+#--------------------------------------------------
+- name: Clone Weboob GIT repo
+  git: repo="https://git.weboob.org/weboob/stable.git" dest="/root/weboob" 
+  when: banking is defined
+  register: weboob
+  tags: bank
+
+- name: Install Weboob
+  command: /root/weboob/tools/local_install.sh /root/bin
+  when: banking is defined and weboob is defined and weboob|changed
+  tags: bank
+
+- name: Install necessary python modules
+  pip:  name="{{ item }}"
+  with_items:
+    - prettytable
+    - cssselect
+    - html2text
+  when: banking is defined
+  tags: bank
+
+- name: Create Config directory
+  file:
+    name: /root/.config/weboob
+    state: directory
+  when: banking is defined
+  tags: bank
+
+- name: Copy configuration file
+  template: src=backends.j2 dest=/root/.config/weboob/backends mode=0400
+  when: banking is defined
+  tags: bank
+
+- name: add cron job to get bank accounts every day
+  cron: 
+    name: import bank moves
+    minute: 30
+    hour: 20
+    job: /root/bin/boobank history {{ bank_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /tmp/bank_account_import.ofx ; chmod 444 /tmp/bank_account_import.ofx
+  when: banking is defined
+  tags: bank
+
+- name: add cron job to get bank accounts every day for account 2
+  cron: 
+    name: import bank moves account 2
+    minute: 50
+    hour: 20
+    job: /root/bin/boobank history {{ bank_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /tmp/bank_account2_import.ofx ; chmod 444 /tmp/bank_account2_import.ofx
+  when: banking is defined and bank_account2 is defined
+  tags: bank
+
+- name: add cron job to get bank 2 accounts every day for bank 2
+  cron: 
+    name: import bank 2 moves
+    minute: 25
+    hour: 20
+    job: /root/bin/boobank history {{ bank2_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /tmp/bank2_account_import.ofx ; chmod 444 /tmp/bank2_account_import.ofx
+  when: banking is defined and bank2_account is defined
+  tags: bank
+
+- name: add cron job to get bank accounts every day for account 2
+  cron: 
+    name: import bank 2 moves account 2
+    minute: 45
+    hour: 20
+    job: /root/bin/boobank history {{ bank2_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /tmp/bank2_account2_import.ofx ; chmod 444 /tmp/bank2_account2_import.ofx
+  when: banking is defined and bank2_account2 is defined
+  tags: bank
+
+#--------------------------------------------------
+# Install ODOO
+#--------------------------------------------------
+#- name: checkout updates of menu.js if exists for theme
+#  lineinfile:
+#    name: /opt/odoo/addons/web/static/src/js/menu.js
+#    regexp: "= remaining_space"
+#    line: "            if ($(this).width() >= remaining_space) {"
+#  register: menu_modified
+
+- name: Download ODOO Server
+  git: depth="1" version="{{ OE_VERSION }}" repo="https://www.github.com/odoo/odoo" dest="{{ OE_HOME }}" 
+
+#- name: Make again updates of menu.js if where existing before - not working since menu_modified seems OK when not modified
+#  lineinfile:
+#    name: /opt/odoo/addons/web/static/src/js/menu.js
+#    regexp: "= remaining_space"
+#    line: "            if ($(this).width() >= remaining_space-180) {"
+#  when: menu_modified
+
+- name: Create custom module directory
+  file: state=directory name="{{ OE_HOME }}/custom/addons" 
+
+- name: Setting permissions on home folder
+  file: state=directory name="{{ OE_HOME }}" recurse="yes" owner="{{ OE_USER }}" group="{{ OE_USER }}"
+
+#--------------------------------------------------
+# Install Dependencies
+#--------------------------------------------------
+- name: Install tool packages from odoo/doc
+  pip:  requirements="{{ OE_HOME }}/doc/requirements.txt"
+
+- name: Install tool packages from odoo
+  pip:  requirements="{{ OE_HOME }}/requirements.txt"
+
+- name: Install WTForms, pysftp, suds and pyopenssl
+  pip:  name="{{ item }}"
+  with_items:
+    - WTForms
+    - pysftp
+    - suds
+    - pyopenssl
+
+#--------------------------------------------------
+# Adding ODOO as a deamon 
+#--------------------------------------------------
+- name: Create Odoo daemon service 
+  template: src=odoo-server.service.j2 dest="/lib/systemd/system/{{ OE_CONFIG }}.service" mode=0644 owner=root
+  notify: restart-odoo
+
+- name: Systemd daemon reload
+  systemd: daemon-reload=yes
+
+- name: Make odoo to start with system 
+  service: name="{{ OE_CONFIG }}" enabled=yes
+  when: inventory_hostname not in groups.odoo_legacy
+
+#--------------------------------------------------
+# Configure ODOO
+#--------------------------------------------------
+- name: Odoo config file
+  template: src=odoo-server.conf.j2 dest="/etc/{{ OE_CONFIG }}.conf" owner="{{ OE_USER }}" group="{{ OE_USER }}" mode=0640
+  notify: restart-odoo
+
+#--------------------------------------------------
+# Configure ODOO custom modules
+#--------------------------------------------------
+- name: Install Odoo custom modules in {{ OE_HOME }}/custom/addons
+  git: repo="https://{{ lf_bitbucket_name }}:{{ lf_bitbucket_pass }}@bitbucket.org/chaudlesmarmots/{{ item }}.git" dest="{{ OE_HOME }}/custom/addons/{{ item }}" version="{{ OE_VERSION }}"
+  with_items: "{{ OE_CUSTOM | default([]) }}"
+  when: OE_CUSTOM is defined
+  notify: restart-odoo
+  tags: custom,lf
+
+- name: Clone OCA custom repo
+  git: repo="https://github.com/OCA/{{ item.repo }}.git" dest="{{ OE_HOME }}/custom/addons/{{ item.repo }}-oca" version="{{ OE_VERSION }}"
+  with_items: "{{ OE_CUSTOM_OCA }}"
+  notify: restart-odoo
+  tags: custom,oca
+
+- name: Create links to OCA custom repos
+  file: state=link src="{{ OE_HOME }}/custom/addons/{{ item.0.repo }}-oca/{{ item.1 }}" dest="{{ OE_HOME }}/custom/addons/{{ item.1 }}"
+  with_subelements:
+    - "{{ OE_CUSTOM_OCA }}"
+    - modules
+  notify: restart-odoo
+  tags: custom,oca
+
+- name: Clone OCA OFX
+  git: repo="https://github.com/OCA/{{ item.repo }}.git" dest="{{ OE_HOME }}/custom/addons/{{ item.repo }}-oca" version="9.0_port_account_bank_statement_import_ofx"
+  with_items: "{{ OE_CUSTOM_OFX }}"
+  notify: restart-odoo
+  when: OE_CUSTOM_OFX is defined
+  tags: custom,ofx
+
+- name: Create links to OFX custom repos
+  file: state=link src="{{ OE_HOME }}/custom/addons/{{ item.0.repo }}-oca/{{ item.1 }}" dest="{{ OE_HOME }}/custom/addons/{{ item.1 }}"
+  with_subelements:
+    - "{{ OE_CUSTOM_OFX }}"
+    - modules
+  when: OE_CUSTOM_OFX is defined
+  notify: restart-odoo
+  tags: custom,ofx
+
+- name: Setting permissions on home folder
+  file: state=directory name="{{ OE_HOME }}/custom/addons" recurse="yes" owner="{{ OE_USER }}" group="{{ OE_USER }}"
+  notify: restart-odoo
+  tags: custom,oca,ofx,lf
+
+#--------------------------------------------------
+# Install NGINX
+#--------------------------------------------------
+- name: Install Nginx Server
+  apt: name="nginx"
+  tags: proxy
+
+- name: Nginx started
+  service: name="nginx" state=started
+  tags: proxy
+
+#--------------------------------------------------
+# Install LETSENCRYPT
+#--------------------------------------------------
+- name: Install letsencrypt
+  apt: name=letsencrypt 
+  tags: proxy
+
+- name: generate certificate
+  command: letsencrypt certonly -a webroot --webroot-path=/var/www/html -d {{ OE_URL }} -n --agree-tos --email {{ maintenance_email }}
+  tags: proxy
+  when: www_site is not defined and OE_URL2 is not defined
+
+- name: generate certificate including www prefix
+  command: letsencrypt certonly -a webroot --webroot-path=/var/www/html -d {{ OE_URL }} -d www.{{ OE_URL }} -n --agree-tos --email {{ maintenance_email }}
+  tags: proxy
+  when: www_site is defined and OE_URL2 is not defined
+
+- name: generate certificate for 2 sites
+  command: letsencrypt certonly -a webroot --webroot-path=/var/www/html -d {{ OE_URL }} -d {{ OE_URL2 }} -n --agree-tos --email {{ maintenance_email }}
+  tags: proxy
+  when: OE_URL2 is defined
+
+- name: add cron job to renew certificate every monday
+  cron: 
+    name: renew certificate
+    minute: 30
+    hour: 2
+    weekday: 1
+    job: /usr/bin/letsencrypt renew >> /var/log/le-renew.log && service nginx reload
+  tags: proxy
+
+- name: add cron job to restart nginx following certificate renewal
+  cron: 
+    name: reload proxy
+    minute: 40
+    hour: 2
+    weekday: 1
+    job: service nginx reload 
+    state: absent
+  tags: proxy
+
+#--------------------------------------------------
+# NGINX Configuration
+#--------------------------------------------------
+- name: Configure Nginx
+  template: src=odoo.j2 dest="/etc/nginx/sites-available/odoo"
+  notify: restart nginx
+  tags: proxy
+
+- name: "Enable nginx configuration"
+  file: src="/etc/nginx/sites-available/odoo" dest="/etc/nginx/sites-enabled/odoo" state=link
+  notify: restart nginx
+  tags: proxy
+
+- name: Remove default Nginx configuration
+  file: path="/etc/nginx/sites-enabled/default" state=absent
+  notify: restart nginx
+  tags: proxy
+

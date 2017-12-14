@@ -1,0 +1,12 @@
+[mot-de-passe:children]
+vps_server
+
+[vps_server]
+WavesnSee
+
+[odoo_server]
+WavesnSee
+
+[owncloud_server]
+WavesnSee
+

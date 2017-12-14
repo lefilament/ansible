@@ -1,0 +1,34 @@
+## Ansible configuration for connecting to remote host
+# IP address
+ansible_ssh_host: "{{ waves_srv_ip }}"
+# User
+host_user: "{{ waves_srv_user }}"
+# Encryped password
+host_password: "{{ waves_srv_pass }}"
+# Clear Password
+ansible_ssh_pass: "{{ waves_srv_pass }}"
+ansible_sudo_pass: "{{ waves_srv_pass }}"
+
+## Odoo configuration
+# URL for setting certificate
+OE_URL: "{{ waves_srv_url }}" 
+
+# Odoo version and daemon name
+OE_VERSION: "10.0"
+OE_DAEMON: "odoo-bin"
+
+# Odoo Master password
+OE_SUPERADMIN: "{{ waves_odoo_master_pass }}"
+
+# Custom modules
+OE_CUSTOM:
+  - lf_theme
+  - lefilament_wiki
+
+## OwnCloud configuration
+# URL for Owncloud
+cloud_url: "{{ waves_owncloud_url }}"
+# PostgreSQL password for Owncloud
+cloud_pg_hash: "{{ waves_owncloud_pg_hash }}"
+# Data directory for Owncloud
+cloud_data_dir: "{{ waves_owncloud_data_dir }}"

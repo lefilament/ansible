@@ -1,0 +1,33 @@
+---
+
+- hosts: all
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: raw_server, tags: raw }
+  vars:
+  - { ansible_ssh_user: root }
+  - { ansible_ssh_port: 22 }
+
+- hosts: all
+  become: yes
+  roles:
+  - { role: init_server, tags: init }
+
+- hosts: odoo_server
+  gather_facts: no
+  become: yes
+  roles: 
+  - { role: odoo_server, tags: odoo }
+
+- hosts: owncloud_server
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: owncloud, tags: owncloud } 
+
+- hosts: all
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: iptables, tags: iptables }

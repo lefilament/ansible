@@ -1,0 +1,26 @@
+---
+
+- name: Initial packages update using raw module
+  raw: apt-get update -y
+  tags: raw-debian
+
+- name: Initial packages upgrade using raw module
+  raw: apt-get upgrade -y
+  tags: raw-debian
+
+- name: Initial python installation using raw module
+  raw: apt-get install -y python python-simplejson aptitude 
+  tags: raw-debian
+
+- name: Initial packages update using raw module
+  raw: yum update -y
+  tags: raw-redhat
+
+- name: Initial packages upgrade using raw module
+  raw: yum upgrade -y
+  tags: raw-redhat
+
+- name: Initial python installation using raw module
+  raw: yum install -y python python-simplejson aptitude 
+  tags: raw-redhat
+

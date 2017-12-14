@@ -1,0 +1,12 @@
+[options]
+admin_passwd = {{ OE_SUPERADMIN }}
+db_host = False
+db_port = False
+db_user = odoo
+{% if OE_DB_FILTER is defined %}
+dbfilter = {{ OE_DB_FILTER }}
+{% endif %}
+addons_path={{ OE_HOME }}/addons,{{ OE_HOME }}/custom/addons
+logfile = /var/log/odoo/{{ OE_CONFIG }}.log
+xmlrpc_port = 8069
+max_cron_threads = 1

@@ -1,0 +1,86 @@
+# Fail2Ban configuration file
+#
+# Author: Cyril Jaquier
+#
+#
+
+[INCLUDES]
+
+before = mail-whois-common.conf
+
+[Definition]
+
+# Option:  actionstart
+# Notes.:  command executed once at the start of Fail2Ban.
+# Values:  CMD
+#
+actionstart = printf %%b "*################################################\n
+                          *#\n
+                          *#  SERVEUR {{ inventory_hostname|upper }}
+                          *#\n
+                          *#  Démarrage du Service : <name>
+                          *#\n
+                          *################################################\n"|mail -s "[{{ inventory_hostname }} - Service] <name>: started on `uname -n`" <dest>
+
+# Option:  actionstop
+# Notes.:  command executed once at the end of Fail2Ban
+# Values:  CMD
+#
+actionstop = printf %%b "*################################################\n
+                          *#\n
+                          *#  SERVEUR {{ inventory_hostname|upper }}
+                          *#\n
+                          *#  Arrêt du Service : <name>
+                          *#\n
+                          *################################################\n"|mail -s "[{{ inventory_hostname }} - Service] <name>: STOPPED on `uname -n`" <dest>
+
+# Option:  actioncheck
+# Notes.:  command executed once before each actionban command
+# Values:  CMD
+#
+actioncheck = 
+
+# Option:  actionban
+# Notes.:  command executed when banning an IP. Take care that the
+#          command is executed with Fail2Ban user rights.
+# Tags:    See jail.conf(5) man page
+# Values:  CMD
+#
+actionban = printf %%b "*################################################\n
+                        *#\n
+                        *#  SERVEUR {{ inventory_hostname|upper }}
+                        *#\n
+                        *#  Intrusion sur le Service : <name>
+                        *#\n
+                        *#  @IP bloquée : <ip>
+                        *#\n
+                        *################################################\n
+                        \n
+                        COMMANDE WHOIS : \n\n
+                        `%(_whois_command)s`\n"|mail -s "[{{ inventory_hostname }} - Serveur] IP  : <ip>  | Service : <name>" <dest>
+
+# Option:  actionunban
+# Notes.:  command executed when unbanning an IP. Take care that the
+#          command is executed with Fail2Ban user rights.
+# Tags:    See jail.conf(5) man page
+# Values:  CMD
+#
+actionunban = 
+
+[Init]
+
+# Default name of the chain
+#
+name = {{ inventory_hostname }}
+
+# Destination/Addressee of the mail
+#
+dest = {{ maintenance_email }}
+
+# Path to the log files which contain relevant lines for the abuser IP
+#
+logpath = /dev/null
+
+# Number of log lines to include in the email
+#
+grepopts = -m 1000

@@ -1,0 +1,4 @@
+---
+
+ansible_ssh_user: "{{ host_user }}"
+ansible_ssh_port: "{{ ssh_port }}"

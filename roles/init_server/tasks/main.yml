@@ -1,0 +1,111 @@
+---
+
+- name: Update repo and upgrade installed packages
+  apt:
+    update_cache: yes
+    upgrade: full
+    autoremove: yes
+    force: yes
+  when: ansible_os_family == "Debian"
+
+- name: Remove unecessary Samba packages
+  apt:
+    name: samba*
+    autoremove: yes
+    state: absent
+  when: ansible_os_family == "Debian"
+
+- name: Remove unecessary samba hooks
+  file:
+    name: /etc/dhcp/dhclient-enter-hooks.d/samba
+    state: absent
+  when:  ansible_os_family == "Debian"
+
+- name: Update repo and upgrade installed packages
+  yum:
+    update_cache: yes
+    name: '*'
+    state: latest
+  when: ansible_os_family == "RedHat"
+
+- name: Create {{ host_user }} group
+  group:
+    name: "{{ host_user }}"
+
+- name: Create {{ host_user }} user
+  user:
+    name: "{{ host_user }}"
+    group: "{{ host_user }}"
+    password: "{{ host_password | password_hash('sha512') }}"
+    generate_ssh_key: yes
+    shell: /bin/bash
+
+- name: add user in sudoers
+  lineinfile:
+    name: /etc/sudoers
+    regexp: "^{{ host_user }}"
+    line: "{{ host_user }} ALL=(ALL) ALL"
+
+- name: add public key to authorized keys
+  authorized_key:
+    key: "{{ item }}"
+    user: "{{ host_user }}"
+  with_items:
+    - "{{ depl_ssh_pubkey }}"
+  tags: sshd
+
+- name: Disable access with dsa key
+  lineinfile: 
+    name: /etc/ssh/sshd_config
+    regexp: "HostKey /etc/ssh/ssh_host_dsa_key"
+    line: "#HostKey /etc/ssh/ssh_host_dsa_key"
+  notify: restart-sshd
+  tags: sshd
+
+- name: Disable access with ecdsa key
+  lineinfile: 
+    name: /etc/ssh/sshd_config
+    regexp: "HostKey /etc/ssh/ssh_host_ecdsa_key"
+    line: "#HostKey /etc/ssh/ssh_host_ecdsa_key"
+  notify: restart-sshd
+  tags: sshd
+
+- name: Disable access with password, use key only
+  lineinfile: 
+    name: /etc/ssh/sshd_config
+    regexp: "HostKey /etc/ssh/ssh_host_ed25519_key"
+    line: "#HostKey /etc/ssh/ssh_host_ed25519_key"
+  notify: restart-sshd
+  tags: sshd
+
+- name: configure sshd port
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^Port"
+    line: "Port {{ ansible_ssh_port }}"
+  notify: restart-sshd
+  tags: sshd
+
+- name: Disable ssh root login
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin no"
+  notify: restart-sshd
+  tags: sshd
+
+- name: Disable access with password, use key only
+  lineinfile: 
+    name: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+  notify: restart-sshd
+  tags: sshd
+
+- name: Enable ssh connection for {{ host_user }} only
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^AllowUsers"
+    line: "AllowUsers {{ host_user }}"
+  notify: restart-sshd
+  tags: sshd
