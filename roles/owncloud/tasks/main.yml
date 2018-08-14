@@ -11,7 +11,6 @@
     - postgresql-server-dev-all
     - python-setuptools
     - nginx
-    - letsencrypt
     - php7.0-fpm
     - php7.0-xml
     - php7.0-zip
@@ -33,6 +32,7 @@
     password: "{{ cloud_pg_hash }}"
   become: yes
   become_user: postgres
+  tags: owncloud_db
 
 - name: Creating the Owncloud PostgreSQL DB
   postgresql_db: 
@@ -40,6 +40,7 @@
     owner: owncloud
   become: yes
   become_user: postgres
+  tags: owncloud_db
 
 - name: download and install Owncloud
   unarchive:
@@ -47,8 +48,17 @@
     remote_src: yes
     dest: /var/www/
 
-- name: generate certificate
-  command: letsencrypt certonly -a webroot --webroot-path=/var/www/html -d {{ cloud_url }} -n --agree-tos --email {{ maintenance_email }}
+- name: update apt repository with certbot one
+  apt_repository: repo="ppa:certbot/certbot"
+  tags: owncloud_certificate,owncloud_proxy
+
+- name: install certbot for nginx
+  apt: name=python-certbot-nginx update_cache=yes force=yes
+  tags: owncloud_certificate,owncloud_proxy
+
+- name: install certificate
+  shell: "certbot --nginx -n --domains {{ cloud_url }} --agree-tos -m {{ maintenance_email }}"
+  tags: owncloud_certificate,owncloud_proxy
 
 - name: add cron job to renew certificate every monday
   cron:
@@ -56,16 +66,8 @@
     minute: 30
     hour: 2
     weekday: 1
-    job: /usr/bin/letsencrypt renew >> /var/log/le-renew.log && service nginx reload
-
-- name: add cron job to restart proxy following certificate renewal
-  cron:
-    name: reload proxy
-    minute: 40
-    hour: 2
-    weekday: 1
-    job: service nginx reload
-    state: absent
+    job: certbot renew >> /var/log/le-renew.log
+  tags: owncloud_certificate,owncloud_proxy
 
 #--------------------------------------------------
 # NGINX Configuration
@@ -74,14 +76,49 @@
 - name: Configure Nginx
   template: src=owncloud.j2 dest="/etc/nginx/sites-available/owncloud"
   notify: restart nginx
+  tags: owncloud_proxy
 
 - name: "Enable nginx configuration"
   file: src="/etc/nginx/sites-available/owncloud" dest="/etc/nginx/sites-enabled/owncloud" state=link
   notify: restart nginx
+  tags: owncloud_proxy
 
 - name: Remove default Nginx configuration
   file: path="/etc/nginx/sites-enabled/default" state=absent
   notify: restart nginx
+  tags: owncloud_proxy
+
+
+#--------------------------------------------------
+# RSnapshot Configuration
+#--------------------------------------------------
+- name: Install rsnapshot for backups
+  apt:  
+    name: rsnapshot
+    update_cache: yes
+  tags: snapshot
+
+- name: rsnapshot configuration file
+  template:
+    src: rsnapshot.conf.j2
+    dest: /etc/rsnapshot.conf
+  tags: snapshot
+
+- name: copy script to dump database
+  copy:
+    src: backup_pgsql.sh
+    dest: /usr/local/bin/backup_pgsql.sh
+    mode: 0700
+  tags: snapshot
+
+- name: add cron job to perform backup
+  cron:
+    name: Backup Owncloud
+    minute: 45
+    hour: 3
+    day: 2
+    job: rsnapshot alpha
+  tags: snapshot
 
 
 #--------------------------------------------------
