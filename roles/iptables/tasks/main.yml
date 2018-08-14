@@ -2,6 +2,8 @@
 
 - name: install mailutils
   package: name=mailutils state=present
+  async: 120
+  poll: 10
   when: ansible_os_family == "Debian"
 
 - name: install mailx
