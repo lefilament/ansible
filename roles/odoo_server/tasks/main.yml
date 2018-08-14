@@ -100,26 +100,12 @@
   tags: preinstall
 
 #--------------------------------------------------
-# Configure PostgreSQL Server
-#--------------------------------------------------
-- name: Creating the ODOO PostgreSQL User 
-  postgresql_user: name="{{ OE_USER }}" role_attr_flags="CREATEDB,NOSUPERUSER"
-  become: yes
-  become_user: postgres
-  tags: preinstall
-
-#--------------------------------------------------
 # Install Bank export module
 #--------------------------------------------------
 - name: Clone Weboob GIT repo
-  git: repo="https://git.weboob.org/weboob/stable.git" dest="/root/weboob" 
+  git: repo="https://git.weboob.org/weboob/devel.git" dest="/root/weboob" 
   when: banking is defined
   register: weboob
-  tags: bank
-
-- name: Install Weboob
-  command: /root/weboob/tools/local_install.sh /root/bin
-  when: banking is defined and weboob is defined and weboob|changed
   tags: bank
 
 - name: Install necessary python modules
@@ -128,6 +114,7 @@
     - prettytable
     - cssselect
     - html2text
+    - unidecode
   when: banking is defined
   tags: bank
 
@@ -148,7 +135,7 @@
     name: import bank moves
     minute: 30
     hour: 20
-    job: /root/bin/boobank history {{ bank_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /tmp/bank_account_import.ofx ; chmod 444 /tmp/bank_account_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /tmp/bank_account_import.ofx ; chmod 444 /tmp/bank_account_import.ofx
   when: banking is defined
   tags: bank
 
@@ -157,7 +144,7 @@
     name: import bank moves account 2
     minute: 50
     hour: 20
-    job: /root/bin/boobank history {{ bank_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /tmp/bank_account2_import.ofx ; chmod 444 /tmp/bank_account2_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /tmp/bank_account2_import.ofx ; chmod 444 /tmp/bank_account2_import.ofx
   when: banking is defined and bank_account2 is defined
   tags: bank
 
@@ -166,16 +153,16 @@
     name: import bank 2 moves
     minute: 25
     hour: 20
-    job: /root/bin/boobank history {{ bank2_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /tmp/bank2_account_import.ofx ; chmod 444 /tmp/bank2_account_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank2_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /tmp/bank2_account_import.ofx ; chmod 444 /tmp/bank2_account_import.ofx
   when: banking is defined and bank2_account is defined
   tags: bank
 
-- name: add cron job to get bank accounts every day for account 2
+- name: add cron job to get bank 2 accounts every day for account 2
   cron: 
     name: import bank 2 moves account 2
     minute: 45
     hour: 20
-    job: /root/bin/boobank history {{ bank2_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /tmp/bank2_account2_import.ofx ; chmod 444 /tmp/bank2_account2_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank2_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /tmp/bank2_account2_import.ofx ; chmod 444 /tmp/bank2_account2_import.ofx
   when: banking is defined and bank2_account2 is defined
   tags: bank
 
@@ -221,6 +208,15 @@
     - pysftp
     - suds
     - pyopenssl
+
+#--------------------------------------------------
+# Configure PostgreSQL Server
+#--------------------------------------------------
+- name: Creating the ODOO PostgreSQL User
+  postgresql_user: name="{{ OE_USER }}" role_attr_flags="CREATEDB,NOSUPERUSER"
+  become: yes
+  become_user: postgres
+  tags: preinstall
 
 #--------------------------------------------------
 # Adding ODOO as a deamon 
@@ -302,23 +298,28 @@
 #--------------------------------------------------
 # Install LETSENCRYPT
 #--------------------------------------------------
-- name: Install letsencrypt
-  apt: name=letsencrypt 
-  tags: proxy
 
-- name: generate certificate
-  command: letsencrypt certonly -a webroot --webroot-path=/var/www/html -d {{ OE_URL }} -n --agree-tos --email {{ maintenance_email }}
-  tags: proxy
+- name: update apt repository with certbot one
+  apt_repository: repo="ppa:certbot/certbot"
+  tags: certificate,proxy
+
+- name: install certbot for nginx
+  apt: name=python-certbot-nginx update_cache=yes force=yes
+  tags: certificate,proxy
+
+- name: install certificate
+  shell: "certbot --nginx -n --domains {{ OE_URL }} --agree-tos -m {{ maintenance_email }}"
+  tags: certificate,proxy
   when: www_site is not defined and OE_URL2 is not defined
 
-- name: generate certificate including www prefix
-  command: letsencrypt certonly -a webroot --webroot-path=/var/www/html -d {{ OE_URL }} -d www.{{ OE_URL }} -n --agree-tos --email {{ maintenance_email }}
-  tags: proxy
+- name: install certificate
+  shell: "certbot --nginx -n --domains {{ OE_URL }} --domains www.{{ OE_URL }} --agree-tos -m {{ maintenance_email }}"
+  tags: certificate,proxy
   when: www_site is defined and OE_URL2 is not defined
 
-- name: generate certificate for 2 sites
-  command: letsencrypt certonly -a webroot --webroot-path=/var/www/html -d {{ OE_URL }} -d {{ OE_URL2 }} -n --agree-tos --email {{ maintenance_email }}
-  tags: proxy
+- name: install certificate
+  shell: "certbot --nginx -n --domains {{ OE_URL }} --domains {{ OE_URL2 }} --agree-tos -m {{ maintenance_email }}"
+  tags: certificate,proxy
   when: OE_URL2 is defined
 
 - name: add cron job to renew certificate every monday
@@ -327,18 +328,8 @@
     minute: 30
     hour: 2
     weekday: 1
-    job: /usr/bin/letsencrypt renew >> /var/log/le-renew.log && service nginx reload
-  tags: proxy
-
-- name: add cron job to restart nginx following certificate renewal
-  cron: 
-    name: reload proxy
-    minute: 40
-    hour: 2
-    weekday: 1
-    job: service nginx reload 
-    state: absent
-  tags: proxy
+    job: certbot renew >> /var/log/le-renew.log 
+  tags: certificate,proxy
 
 #--------------------------------------------------
 # NGINX Configuration
