@@ -2,11 +2,11 @@
 vps_server
 
 [vps_server]
-WavesnSee
+NewHost
 
 [odoo_server]
-WavesnSee
+NewHost
 
 [owncloud_server]
-WavesnSee
+NewHost
 
