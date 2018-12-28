@@ -7,7 +7,7 @@ odoo_version: 10.0
 odoo_custom_modules:
   - lefilament_projets
 
-odoo_custom_modules_oca:
+default_odoo_custom_modules_oca:
   - repo: account-financial-reporting
     modules:
      - account_tax_balance
@@ -24,9 +24,9 @@ odoo_custom_modules_oca:
      - partner_firstname
   - repo: server-tools
     modules:
-     - date_range
      - auth_session_timeout
      - auth_brute_force
+     - date_range
      - password_security
   - repo: social
     modules:

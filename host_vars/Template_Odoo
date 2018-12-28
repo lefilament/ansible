@@ -30,24 +30,18 @@ odoo_other_modules:
    modules:
      - auth_cas
 
-# OCA modules
+# OCA modules - these should be limited to the ones not already defined 
+# in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these
+# are already part of remifilament/odoo:10.0 docker)
 odoo_custom_modules_oca:
   - repo: server-tools
     modules:
      - auto_backup
-     - date_range
   - repo: knowledge
     modules:
-     - document_page
      - document_page_approval
-     - document_url
-     - knowledge
-  - repo: partner-contact
-    modules:
-     - partner_firstname
   - repo: social
     modules:
-     - mail_restrict_follower_selection
      - mail_attach_existing_attachment
   - repo: website-cms
     modules:     
