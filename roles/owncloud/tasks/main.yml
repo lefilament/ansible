@@ -4,9 +4,11 @@
   apt:  
     name: "{{ item }}"
     update_cache: yes
+    install_recommends: no
   with_items:
     - gcc
     - python-dev
+    - python-pip
     - postgresql
     - postgresql-server-dev-all
     - python-setuptools
@@ -18,12 +20,20 @@
     - php7.0-gd 
     - php7.0-mbstring 
     - php7.0-curl
+    - duplicity
 
 - name: Install tool packages easyInstall
   easy_install: 
     name: "{{ item }}"
   with_items:
     - psycopg2
+
+- name: Install python-swiftclient
+  pip:
+    name: "{{ item }}"
+  with_items:
+    - python-swiftclient
+    - python-keystoneclient
 
 - name: Creating the Owncloud PostgreSQL User
   postgresql_user: 
@@ -44,7 +54,7 @@
 
 - name: download and install Owncloud
   unarchive:
-    src: https://download.owncloud.org/community/owncloud-10.0.4.tar.bz2
+    src: https://download.owncloud.org/community/owncloud-10.0.10.tar.bz2
     remote_src: yes
     dest: /var/www/
 
@@ -53,7 +63,7 @@
   tags: owncloud_certificate,owncloud_proxy
 
 - name: install certbot for nginx
-  apt: name=python-certbot-nginx update_cache=yes force=yes
+  apt: name=python-certbot-nginx update_cache=yes force=yes install_recommends=no
   tags: owncloud_certificate,owncloud_proxy
 
 - name: install certificate
@@ -66,7 +76,7 @@
     minute: 30
     hour: 2
     weekday: 1
-    job: certbot renew >> /var/log/le-renew.log
+    job: certbot renew --nginx >> /var/log/le-renew.log
   tags: owncloud_certificate,owncloud_proxy
 
 #--------------------------------------------------
@@ -90,26 +100,15 @@
 
 
 #--------------------------------------------------
-# RSnapshot Configuration
+# Backup Configuration
 #--------------------------------------------------
-- name: Install rsnapshot for backups
-  apt:  
-    name: rsnapshot
-    update_cache: yes
-  tags: snapshot
-
-- name: rsnapshot configuration file
+- name: Backup script
   template:
-    src: rsnapshot.conf.j2
-    dest: /etc/rsnapshot.conf
-  tags: snapshot
-
-- name: copy script to dump database
-  copy:
-    src: backup_pgsql.sh
-    dest: /usr/local/bin/backup_pgsql.sh
+    src: backup.sh.j2
+    dest: /root/backup-owncloud.sh
     mode: 0700
-  tags: snapshot
+    owner: root
+    group: root
 
 - name: add cron job to perform backup
   cron:
@@ -117,8 +116,7 @@
     minute: 45
     hour: 3
     day: 2
-    job: rsnapshot alpha
-  tags: snapshot
+    job: /root/backup-owncloud.sh
 
 
 #--------------------------------------------------

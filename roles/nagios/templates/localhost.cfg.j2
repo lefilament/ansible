@@ -1,0 +1,202 @@
+###############################################################################
+# LOCALHOST.CFG - SAMPLE OBJECT CONFIG FILE FOR MONITORING THIS MACHINE
+#
+#
+# NOTE: This config file is intended to serve as an *extremely* simple 
+#       example of how you can create configuration entries to monitor
+#       the local (Linux) machine.
+#
+###############################################################################
+
+
+
+
+###############################################################################
+###############################################################################
+#
+# HOST DEFINITION
+#
+###############################################################################
+###############################################################################
+
+# Define a host for the local machine
+
+define host{
+        use                     linux-server
+        host_name               {{ inventory_hostname }}
+        alias                   {{ inventory_hostname }}
+        address                 127.0.0.1
+        }
+
+
+###############################################################################
+###############################################################################
+#
+# SERVICE DEFINITIONS
+#
+###############################################################################
+###############################################################################
+
+
+# Define a service to "ping" the local machine
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             PING
+	check_command			check_ping!100.0,20%!500.0,60%
+        }
+
+
+# Define a service to check the disk space of the root partition
+# on the local machine.  Warning if < 20% free, critical if
+# < 10% free space on partition.
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Espace Disque
+	check_command			check_local_disk!10%!5%!/
+        }
+
+
+
+# Define a service to check the number of currently logged in
+# users on the local machine.  Warning if > 20 users, critical
+# if > 50 users.
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Utilisateurs Connectes
+	check_command			check_local_users!5!10
+        }
+
+
+# Define a service to check the number of currently running procs
+# on the local machine.  Warning if > 250 processes, critical if
+# > 400 processes.
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Processus en cours
+	check_command			check_total_procs!250!400!RSZDT
+        }
+
+
+
+# Define a service to check the load on the local machine. 
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Charge CPU
+	check_command			check_local_load!5.0,4.0,3.0!10.0,6.0,4.0
+        }
+
+
+
+# Define a service to check the swap usage the local machine. 
+# Critical if less than 10% of swap is free, warning if less than 20% is free
+
+#define service{
+#        use                             generic-service
+#        host_name                       nagios
+#        service_description             Swap Usage
+#	check_command			check_local_swap!20!10
+#        }
+
+
+
+# Define a service to check SSH on the local machine.
+# Disable notifications for this service by default, as not all users may have SSH enabled.
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             SSH
+	check_command			check_ssh_port!2222
+        }
+
+
+
+# Define a service to check HTTP on the local machine.
+# Disable notifications for this service by default, as not all users may have HTTP enabled.
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Nagios {{ inventory_hostname }}
+	check_command			check_http!'{{ nagios_url }}'
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Certificate Nagios {{ inventory_hostname }}
+	check_command			check_certif!'{{ nagios_url }}'!443
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Odoo {{ inventory_hostname }}
+        check_command                   check_https!'{{ odoo_url }}'
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Certificate Odoo {{ inventory_hostname }}
+        check_command                   check_certif!'{{ odoo_url }}'!443
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             OwnCloud {{ inventory_hostname }}
+        check_command                   check_https!'{{ cloud_url }}'
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Certificate OwnCloud {{ inventory_hostname }}
+        check_command                   check_certif!'{{ cloud_url }}'!443
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Odoo Service
+        check_command                   check_local_procs_args!2!1:!python!odoo-bin
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Nagios Service
+        check_command                   check_local_procs!20!2:!nagios
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Nginx Service
+        check_command                   check_local_procs!5!2:!nginx
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             Owncloud Service
+        check_command                   check_local_procs!10!2:!php-fpm7.0
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ inventory_hostname }}
+        service_description             SSHD Service
+        check_command                   check_local_procs_args!2!1:!sshd!-D
+        }

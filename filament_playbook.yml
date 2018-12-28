@@ -1,18 +1,40 @@
 ---
 
 - hosts: all
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: raw_server, tags: raw }
-  vars:
-  - { ansible_ssh_user: root }
-  - { ansible_ssh_port: 22 }
-
-- hosts: all
   become: yes
   roles:
   - { role: init_server, tags: init }
+
+- hosts: docker
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_server, tags: docker }
+
+- hosts: docker_auth
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_auth, tags: docker_auth }
+
+- hosts: docker_odoo
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_odoo, tags: docker_odoo }
+
+- hosts: docker_nextcloud
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_nextcloud, tags: docker_nextcloud }
+  - { role: docker_cloudaborative, tags: docker_cloudaborative }
+
+- hosts: docker_owncloud
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_owncloud, tags: docker_owncloud }
 
 - hosts: odoo_server
   gather_facts: no
@@ -31,3 +53,21 @@
   become: yes
   roles:
   - { role: iptables, tags: iptables }
+
+- hosts: all 
+  gather_facts: no
+  become: yes
+  roles: 
+  - { role: nagios_nrpe, tags: nrpe }
+
+- hosts: nagios_server
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: nagios, tags: nagios }
+
+- hosts: docker_nagios
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_nagios, tags: docker_nagios }

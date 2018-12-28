@@ -1,0 +1,21 @@
+---
+
+- hosts: all
+  gather_facts: no
+  roles:
+  - { role: raw_server, tags: raw }
+  vars:
+  - { ansible_ssh_user: root }
+  - { ansible_ssh_pass: "{{ host_root_password }}" }
+  - { ansible_ssh_port: 22 }
+  - { ansible_connection: paramiko }
+
+- hosts: all
+  gather_facts: yes
+  roles:
+  - { role: init_server, tags: init }
+  vars:
+  - { ansible_ssh_user: root }
+  - { ansible_ssh_pass: "{{ host_root_password }}" }
+  - { ansible_ssh_port: 22 }
+  - { ansible_connection: paramiko }

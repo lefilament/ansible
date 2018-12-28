@@ -1,0 +1,384 @@
+###############################################################################
+###############################################################################
+#
+# HOST DEFINITION
+#
+###############################################################################
+###############################################################################
+
+# Define a host for the local machine
+{% for host in groups['vps_server'] | union(groups['dedicated_server']) %}
+{% if host != inventory_hostname %}
+define host{
+        use                     linux-server            
+        host_name               {{ host }} 
+        alias                   {{ host }}
+        address                 {{ hostvars[host].ansible_ssh_host }}
+        }
+
+{% endif %}
+{% endfor %}
+
+define host{
+        use                     linux-server            
+        host_name               {{ inventory_hostname }} 
+        alias                   {{ inventory_hostname }}
+        address                 172.23.0.1
+        }
+
+{% for host in groups['physical_server'] %}
+define host{
+        use                     linux-server-without-ping            
+        host_name               {{ host }} 
+        alias                   {{ host }}
+        address                 {{ hostvars[host].ansible_ssh_host }}
+        }
+
+{% endfor %}
+
+###############################################################################
+###############################################################################
+#
+# HOST GROUP DEFINITION
+#
+###############################################################################
+###############################################################################
+
+# Define an optional hostgroup for Linux machines
+
+define hostgroup{
+        hostgroup_name  servers_no_docker
+        alias           Serveurs Sans Docker
+        members         {{ groups['all'] | difference(groups['docker']) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        }
+
+define hostgroup{
+        hostgroup_name  servers_docker
+        alias           Serveurs Dockers
+        members         {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        }
+
+###############################################################################
+###############################################################################
+#
+# SERVICE DEFINITIONS
+#
+###############################################################################
+###############################################################################
+
+
+# Define a service to "ping" the local machine
+
+define service{
+        use                             generic-service    
+        host_name                       {{ groups['vps_server'] | union(groups['dedicated_server']) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             PING
+        check_command                   check_ping!100.0,20%!500.0,60%
+        }
+
+
+# Define a service to check the disk space of the root partition
+# on the local machine.  Warning if < 20% free, critical if
+# < 10% free space on partition.
+
+define service{
+        use                             generic-service,graphed-service 
+        host_name                       {{ groups['vps_server'] | union(groups['dedicated_server']) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Espace Disque
+        check_command                   check_nrpe!check_hda1
+        }
+
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['physical_server']  | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Partition Boot
+        check_command                   check_nrpe!check_hda1
+        }
+
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['physical_server']  | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Espace Disque
+        check_command                   check_nrpe!check_disk
+        }
+
+# Define a service to check the number of currently logged in
+# users on the local machine.  Warning if > 20 users, critical
+# Define a service to check the number of currently logged in
+# users on the local machine.  Warning if > 20 users, critical
+# if > 50 users.
+
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['vps_server'] | union(groups['dedicated_server']) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Utilisateurs Connectes
+        check_command                   check_nrpe!check_users
+        }
+
+
+# Define a service to check the number of currently running procs
+# on the local machine.  Warning if > 250 processes, critical if
+# > 400 processes.
+
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Services en cours
+        check_command                   check_nrpe!check_total_procs
+        }
+
+# Define services to check for running processes
+define service{
+        use                             generic-service
+        host_name                       {{ groups['odoo_server'] | union(groups['owncloud_server']) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Nginx Service
+        check_command                   check_nrpe!check_procs_nginx
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             SSHD Service
+        check_command                   check_nrpe!check_procs_sshd
+        }
+
+
+# Define a service to check the load on the local machine. 
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Charge CPU
+        check_command                   check_nrpe!check_load
+        }
+
+# SSH
+define service{
+        use                             generic-service
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             SSH
+        check_command                   check_ssh_port!2222
+        }
+
+# Docker Proxy
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Docker Proxy
+        check_command                   check_nrpe!check_docker_proxy
+        }
+
+# Docker LDAP
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Docker LDAP
+        check_command                   check_nrpe!check_docker_ldap
+        }
+
+# Docker SSO
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Docker SSO
+        check_command                   check_nrpe!check_docker_sso
+        }
+
+
+# Docker Odoo 
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Docker Odoo
+        check_command                   check_nrpe!check_docker_odoo
+        }
+
+# Docker Odoo Test
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Docker Odoo Test
+        check_command                   check_nrpe!check_docker_odoo_test
+        }
+
+# Docker Odoo Whitelists
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Docker Odoo Whitelists
+        check_command                   check_nrpe!check_docker_whitelists
+        }
+
+# Docker Cloud
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_owncloud'] | union(groups.docker_nextcloud) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        service_description             Docker Cloud
+        check_command                   check_nrpe!check_docker_cloud
+        }
+
+# Definition des services HTTP
+
+{% for host in groups['docker_auth'] %}
+# {{ host }} Docker Auth
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             PhpLdapAdmin {{ hostvars[host].ldap_url }}
+        check_command                   check_https!'{{ hostvars[host].ldap_url }}'
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }}
+        check_command                   check_certif!'{{ hostvars[host].ldap_url }}'!443
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             SSO Server {{ hostvars[host].sso_url }}
+        check_command                   check_https!'{{ hostvars[host].sso_url }}'
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate SSO Server {{ hostvars[host].sso_url }}
+        check_command                   check_certif!'{{ hostvars[host].sso_url }}'!443
+        }
+
+{% endfor %}
+
+{% for host in groups['docker_odoo'] %}
+# {{ host }} Docker Odoo
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             Odoo Server {{ hostvars[host].odoo_url }}
+        check_command                   check_https!'{{ hostvars[host].odoo_url }}'
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate Odoo Server {{ hostvars[host].odoo_url }}
+        check_command                   check_certif!'{{ hostvars[host].odoo_url }}'!443
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             Odoo Test Server {{ hostvars[host].odoo_test_url }}
+        check_command                   check_https!'{{ hostvars[host].odoo_test_url }}'
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }}
+        check_command                   check_certif!'{{ hostvars[host].odoo_test_url }}'!443
+        }
+
+{% endfor %}
+
+{% for host in groups['docker_owncloud'] | union(groups.docker_nextcloud) %}
+# {{ host }} Docker Cloud
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             Cloud Server {{ hostvars[host].cloud_url }}
+        check_command                   check_https!'{{ hostvars[host].cloud_url }}'
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate Cloud Server {{ hostvars[host].cloud_url }}
+        check_command                   check_certif!'{{ hostvars[host].cloud_url }}'!443
+        }
+
+{% if hostvars[host].cloud_onlyoffice is defined %}
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}
+        check_command                   check_https!'{{ hostvars[host].cloud_onlyoffice_url }}'
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}
+        check_command                   check_certif!'{{ hostvars[host].cloud_onlyoffice_url }}'!443
+        }
+{% endif %}
+{% endfor %}
+
+{% for host in groups['docker_nagios'] %}
+# {{ host }} Docker Nagios
+# HTTPS + certificate verification on Dockers
+#define service{
+#        use                             generic-service
+#        host_name                       {{ hostvars[host].nagios_url }}
+#        service_description             Nagios Server
+#  	 check_command			check_http!'{{ hostvars[host].nagios_url }}'
+#        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate Nagios Server {{ hostvars[host].nagios_url }}
+	check_command			check_certif!'{{ hostvars[host].nagios_url }}'!443
+        }
+{% endfor %}
+
+
+{% for host in groups['odoo_server'] %}
+# {{ host }} Odoo
+define service{
+        use                             generic-service            
+        host_name                       {{ host }} 
+        service_description             Odoo {{ hostvars[host].odoo_url }}
+        check_command                   check_https!'{{ hostvars[host].odoo_url }}'
+        }
+
+define service{
+        use                             daily-service            
+        host_name                       {{ host }} 
+        service_description             Certificate Odoo {{ hostvars[host].odoo_url }}
+        check_command                   check_certif!'{{ hostvars[host].odoo_url }}'!443
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ host }} 
+        service_description             Odoo Service
+        check_command                   check_nrpe!check_procs_odoo
+        }
+{% endfor %}
+
+{% for host in groups['owncloud_server']  %}
+# {{ host }} Owncloud 
+define service{
+        use                             generic-service            
+        host_name                       {{ host }} 
+        service_description             OwnCloud {{ hostvars[host].cloud_url }}
+        check_command                   check_https!'{{ hostvars[host].cloud_url }}'
+        }
+
+define service{
+        use                             daily-service            
+        host_name                       {{ host }} 
+        service_description             Certificate OwnCloud {{ hostvars[host].cloud_url }}
+        check_command                   check_certif!'{{ hostvars[host].cloud_url }}'!443
+        }
+
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             Owncloud Service
+        check_command                   check_nrpe!check_procs_owncloud
+        }
+
+{% endfor %}

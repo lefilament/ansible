@@ -5,27 +5,27 @@
 #--------------------------------------------------
 - name: Create odoo system group
   group:
-    name: "{{ OE_USER }}"
+    name: "{{ odoo_user }}"
     system: yes
   tags: preinstall
 
 - name: Create ODOO system user
   user:
     system: yes
-    name: "{{ OE_USER }}"
-    group: "{{ OE_USER }}"
+    name: "{{ odoo_user }}"
+    group: "{{ odoo_user }}"
   tags: preinstall
 
 - name: Create Log directory
   file:
-    name: /var/log/{{ OE_USER }}
+    name: /var/log/{{ odoo_user }}
     state: directory
-    owner: "{{ OE_USER }}"
-    group: "{{ OE_USER }}"
+    owner: "{{ odoo_user }}"
+    group: "{{ odoo_user }}"
   tags: preinstall
 
 - name: Install tool packages
-  apt: name="{{ item }}" force="yes"
+  apt: name="{{ item }}" force="yes" install_recommends=no
   with_items:
     - wget
     - git
@@ -68,12 +68,12 @@
 #  tags: preinstall
 
 - name: Download and extract wktmltox from archive
-  unarchive: src="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz" remote_src=yes dest="/"
+  unarchive: src="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox-0.12.5-1_linux-generic-amd64.tar.xz" remote_src=yes dest="/"
   register: tar_has_been_run
   tags: preinstall
 
 - name: Remove any old version of wkhtmltox
-  apt: name=wkhtmltox state=absent purge=yes force=yes
+  apt: name=wkhtmltox state=absent purge=yes force=yes install_recommends=no
   when: tar_has_been_run.skipped is not defined
   tags: preinstall
 
@@ -88,7 +88,7 @@
   tags: preinstall
 
 - name: Install npm package
-  apt: name="npm"
+  apt: name="npm" install_recommends=no
   tags: preinstall
 
 - name: Install less
@@ -115,6 +115,7 @@
     - cssselect
     - html2text
     - unidecode
+    - pbr
   when: banking is defined
   tags: bank
 
@@ -177,7 +178,7 @@
 #  register: menu_modified
 
 - name: Download ODOO Server
-  git: depth="1" version="{{ OE_VERSION }}" repo="https://www.github.com/odoo/odoo" dest="{{ OE_HOME }}" 
+  git: depth="1" version="{{ odoo_version }}" repo="https://www.github.com/odoo/odoo" dest="{{ odoo_home }}" 
 
 #- name: Make again updates of menu.js if where existing before - not working since menu_modified seems OK when not modified
 #  lineinfile:
@@ -187,19 +188,19 @@
 #  when: menu_modified
 
 - name: Create custom module directory
-  file: state=directory name="{{ OE_HOME }}/custom/addons" 
+  file: state=directory name="{{ odoo_home }}/custom/addons" 
 
 - name: Setting permissions on home folder
-  file: state=directory name="{{ OE_HOME }}" recurse="yes" owner="{{ OE_USER }}" group="{{ OE_USER }}"
+  file: state=directory name="{{ odoo_home }}" recurse="yes" owner="{{ odoo_user }}" group="{{ odoo_user }}"
 
 #--------------------------------------------------
 # Install Dependencies
 #--------------------------------------------------
 - name: Install tool packages from odoo/doc
-  pip:  requirements="{{ OE_HOME }}/doc/requirements.txt"
+  pip:  requirements="{{ odoo_home }}/doc/requirements.txt"
 
 - name: Install tool packages from odoo
-  pip:  requirements="{{ OE_HOME }}/requirements.txt"
+  pip:  requirements="{{ odoo_home }}/requirements.txt"
 
 - name: Install WTForms, pysftp, suds and pyopenssl
   pip:  name="{{ item }}"
@@ -213,7 +214,7 @@
 # Configure PostgreSQL Server
 #--------------------------------------------------
 - name: Creating the ODOO PostgreSQL User
-  postgresql_user: name="{{ OE_USER }}" role_attr_flags="CREATEDB,NOSUPERUSER"
+  postgresql_user: name="{{ odoo_user }}" role_attr_flags="CREATEDB,NOSUPERUSER"
   become: yes
   become_user: postgres
   tags: preinstall
@@ -222,65 +223,64 @@
 # Adding ODOO as a deamon 
 #--------------------------------------------------
 - name: Create Odoo daemon service 
-  template: src=odoo-server.service.j2 dest="/lib/systemd/system/{{ OE_CONFIG }}.service" mode=0644 owner=root
+  template: src=odoo-server.service.j2 dest="/lib/systemd/system/{{ odoo_config_name }}.service" mode=0644 owner=root
   notify: restart-odoo
 
 - name: Systemd daemon reload
   systemd: daemon-reload=yes
 
 - name: Make odoo to start with system 
-  service: name="{{ OE_CONFIG }}" enabled=yes
-  when: inventory_hostname not in groups.odoo_legacy
+  service: name="{{ odoo_config_name }}" enabled=yes
 
 #--------------------------------------------------
 # Configure ODOO
 #--------------------------------------------------
 - name: Odoo config file
-  template: src=odoo-server.conf.j2 dest="/etc/{{ OE_CONFIG }}.conf" owner="{{ OE_USER }}" group="{{ OE_USER }}" mode=0640
+  template: src=odoo-server.conf.j2 dest="/etc/{{ odoo_config_name }}.conf" owner="{{ odoo_user }}" group="{{ odoo_user }}" mode=0640
   notify: restart-odoo
 
 #--------------------------------------------------
 # Configure ODOO custom modules
 #--------------------------------------------------
-- name: Install Odoo custom modules in {{ OE_HOME }}/custom/addons
-  git: repo="https://{{ lf_bitbucket_name }}:{{ lf_bitbucket_pass }}@bitbucket.org/chaudlesmarmots/{{ item }}.git" dest="{{ OE_HOME }}/custom/addons/{{ item }}" version="{{ OE_VERSION }}"
-  with_items: "{{ OE_CUSTOM | default([]) }}"
-  when: OE_CUSTOM is defined
+- name: Install Odoo custom modules in {{ odoo_home }}/custom/addons
+  git: repo="https://github.com/lefilament/{{ item }}.git" dest="{{ odoo_home }}/custom/addons/{{ item }}" version="{{ odoo_version }}"
+  with_items: "{{ odoo_custom_modules | default([]) }}"
+  when: odoo_custom_modules is defined
   notify: restart-odoo
   tags: custom,lf
 
 - name: Clone OCA custom repo
-  git: repo="https://github.com/OCA/{{ item.repo }}.git" dest="{{ OE_HOME }}/custom/addons/{{ item.repo }}-oca" version="{{ OE_VERSION }}"
-  with_items: "{{ OE_CUSTOM_OCA }}"
+  git: repo="https://github.com/OCA/{{ item.repo }}.git" dest="{{ odoo_home }}/custom/addons/{{ item.repo }}-oca" version="{{ odoo_version }}"
+  with_items: "{{ odoo_custom_modules_oca }}"
   notify: restart-odoo
   tags: custom,oca
 
 - name: Create links to OCA custom repos
-  file: state=link src="{{ OE_HOME }}/custom/addons/{{ item.0.repo }}-oca/{{ item.1 }}" dest="{{ OE_HOME }}/custom/addons/{{ item.1 }}"
+  file: state=link src="{{ odoo_home }}/custom/addons/{{ item.0.repo }}-oca/{{ item.1 }}" dest="{{ odoo_home }}/custom/addons/{{ item.1 }}"
   with_subelements:
-    - "{{ OE_CUSTOM_OCA }}"
+    - "{{ odoo_custom_modules_oca }}"
     - modules
   notify: restart-odoo
   tags: custom,oca
 
 - name: Clone OCA OFX
-  git: repo="https://github.com/OCA/{{ item.repo }}.git" dest="{{ OE_HOME }}/custom/addons/{{ item.repo }}-oca" version="9.0_port_account_bank_statement_import_ofx"
-  with_items: "{{ OE_CUSTOM_OFX }}"
+  git: repo="https://github.com/OCA/{{ item.repo }}.git" dest="{{ odoo_home }}/custom/addons/{{ item.repo }}-oca" version="9.0_port_account_bank_statement_import_ofx"
+  with_items: "{{ odoo_custom_modules_ofx }}"
   notify: restart-odoo
-  when: OE_CUSTOM_OFX is defined
+  when: odoo_custom_modules_ofx is defined
   tags: custom,ofx
 
 - name: Create links to OFX custom repos
-  file: state=link src="{{ OE_HOME }}/custom/addons/{{ item.0.repo }}-oca/{{ item.1 }}" dest="{{ OE_HOME }}/custom/addons/{{ item.1 }}"
+  file: state=link src="{{ odoo_home }}/custom/addons/{{ item.0.repo }}-oca/{{ item.1 }}" dest="{{ odoo_home }}/custom/addons/{{ item.1 }}"
   with_subelements:
-    - "{{ OE_CUSTOM_OFX }}"
+    - "{{ odoo_custom_modules_ofx }}"
     - modules
-  when: OE_CUSTOM_OFX is defined
+  when: odoo_custom_modules_ofx is defined
   notify: restart-odoo
   tags: custom,ofx
 
 - name: Setting permissions on home folder
-  file: state=directory name="{{ OE_HOME }}/custom/addons" recurse="yes" owner="{{ OE_USER }}" group="{{ OE_USER }}"
+  file: state=directory name="{{ odoo_home }}/custom/addons" recurse="yes" owner="{{ odoo_user }}" group="{{ odoo_user }}"
   notify: restart-odoo
   tags: custom,oca,ofx,lf
 
@@ -288,7 +288,7 @@
 # Install NGINX
 #--------------------------------------------------
 - name: Install Nginx Server
-  apt: name="nginx"
+  apt: name="nginx" install_recommends=no
   tags: proxy
 
 - name: Nginx started
@@ -304,23 +304,23 @@
   tags: certificate,proxy
 
 - name: install certbot for nginx
-  apt: name=python-certbot-nginx update_cache=yes force=yes
+  apt: name=python-certbot-nginx update_cache=yes force=yes install_recommends=no
   tags: certificate,proxy
 
 - name: install certificate
-  shell: "certbot --nginx -n --domains {{ OE_URL }} --agree-tos -m {{ maintenance_email }}"
+  shell: "certbot --nginx -n --domains {{ odoo_url }} --agree-tos -m {{ maintenance_email }}"
   tags: certificate,proxy
-  when: www_site is not defined and OE_URL2 is not defined
+  when: www_site is not defined and odoo_url2 is not defined
 
 - name: install certificate
-  shell: "certbot --nginx -n --domains {{ OE_URL }} --domains www.{{ OE_URL }} --agree-tos -m {{ maintenance_email }}"
+  shell: "certbot --nginx -n --domains {{ odoo_url }} --domains www.{{ odoo_url }} --agree-tos -m {{ maintenance_email }}"
   tags: certificate,proxy
-  when: www_site is defined and OE_URL2 is not defined
+  when: www_site is defined and odoo_url2 is not defined
 
 - name: install certificate
-  shell: "certbot --nginx -n --domains {{ OE_URL }} --domains {{ OE_URL2 }} --agree-tos -m {{ maintenance_email }}"
+  shell: "certbot --nginx -n --domains {{ odoo_url }} --domains {{ odoo_url2 }} --agree-tos -m {{ maintenance_email }}"
   tags: certificate,proxy
-  when: OE_URL2 is defined
+  when: odoo_url2 is defined
 
 - name: add cron job to renew certificate every monday
   cron: 
@@ -328,7 +328,7 @@
     minute: 30
     hour: 2
     weekday: 1
-    job: certbot renew >> /var/log/le-renew.log 
+    job: certbot renew --nginx >> /var/log/le-renew.log 
   tags: certificate,proxy
 
 #--------------------------------------------------

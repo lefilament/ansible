@@ -18,7 +18,7 @@
 # See man 5 jail.conf for details.
 #
 # [DEFAULT]
-# bantime = 3600
+# bantime = 1h
 #
 # [sshd]
 # enabled = true
@@ -44,10 +44,14 @@ before = paths-debian.conf
 # MISCELLANEOUS OPTIONS
 #
 
-# "ignoreip" can be an IP address, a CIDR mask or a DNS host. Fail2ban will not
-# ban a host which matches an address in this list. Several addresses can be
-# defined using space separator.
-ignoreip = 127.0.0.1/8
+# "ignorself" specifies whether the local resp. own IP addresses should be ignored
+# (default is true). Fail2ban will not ban a host which matches such addresses.
+#ignorself = true
+
+# "ignoreip" can be a list of IP addresses, CIDR masks or DNS hosts. Fail2ban
+# will not ban a host which matches an address in this list. Several addresses
+# can be defined using space (and/or comma) separator.
+#ignoreip = 127.0.0.1/8 ::1
 
 # External command that will take an tagged arguments to ignore, e.g. <ip>,
 # and return true if the IP is to be ignored. False otherwise.
@@ -56,11 +60,11 @@ ignoreip = 127.0.0.1/8
 ignorecommand =
 
 # "bantime" is the number of seconds that a host is banned.
-bantime = 6000
+bantime  = 300m
 
 # A host is banned if it has generated "maxretry" during the last "findtime"
 # seconds.
-findtime  = 600
+findtime  = 10m
 
 # "maxretry" is the number of failures before a host get banned.
 maxretry = 5
@@ -80,7 +84,7 @@ maxretry = 5
 # auto:      will try to use the following backends, in order:
 #              pyinotify, gamin, polling.
 #
-# Note: if systemd backend is choses as the default but you enable a jail
+# Note: if systemd backend is chosen as the default but you enable a jail
 #       for which logs are present only in its own log files, specify some other
 #       backend for that jail (e.g. polling) and provide empty value for
 #       journalmatch. See https://github.com/fail2ban/fail2ban/issues/959#issuecomment-74901200
@@ -94,6 +98,7 @@ backend = auto
 #        but it will be logged as a warning.
 # no:    if a hostname is encountered, will not be used for banning,
 #        but it will be logged as info.
+# raw:   use raw value (no hostname), allow use it for no-host filters/actions (example user)
 usedns = warn
 
 # "logencoding" specifies the encoding of the log files handled by the jail
@@ -112,10 +117,13 @@ logencoding = auto
 enabled = false
 
 
+# "mode" defines the mode of the filter (see corresponding filter implementation for more info).
+mode = normal
+
 # "filter" defines the filter to use by the jail.
 #  By default jails have names matching their filter name
 #
-filter = %(__name__)s
+filter = %(__name__)s[mode=%(mode)s]
 
 
 #
@@ -139,12 +147,15 @@ mta = mail
 # Default protocol
 protocol = tcp
 
-# Specify chain where jumps would need to be added in iptables-* actions
+# Specify chain where jumps would need to be added in ban-actions expecting parameter chain
 chain = INPUT
 
 # Ports to be banned
 # Usually should be overridden in a particular jail
 port = 0:65535
+
+# Format of user-agent https://tools.ietf.org/html/rfc7231#section-5.5.3
+fail2ban_agent = Fail2Ban/%(fail2ban_version)s
 
 #
 # Action shortcuts. To be used to define action parameter
@@ -154,18 +165,19 @@ port = 0:65535
 # action_* variables. Can be overridden globally or per
 # section within jail.local file
 banaction = iptables-multiport
+banaction_allports = iptables-allports
 
 # The simplest action to take: ban only
 action_ = %(banaction)s[name=%(__name__)s, bantime="%(bantime)s", port="%(port)s", protocol="%(protocol)s", chain="%(chain)s"]
 
 # ban & send an e-mail with whois report to the destemail.
 action_mw = %(banaction)s[name=%(__name__)s, bantime="%(bantime)s", port="%(port)s", protocol="%(protocol)s", chain="%(chain)s"]
-            %(mta)s-whois[name=%(__name__)s, dest="%(destemail)s", protocol="%(protocol)s", chain="%(chain)s"]
+            %(mta)s-whois[name=%(__name__)s, sender="%(sender)s", dest="%(destemail)s", protocol="%(protocol)s", chain="%(chain)s"]
 
 # ban & send an e-mail with whois report and relevant log lines
 # to the destemail.
 action_mwl = %(banaction)s[name=%(__name__)s, bantime="%(bantime)s", port="%(port)s", protocol="%(protocol)s", chain="%(chain)s"]
-             %(mta)s-whois-lines[name=%(__name__)s, dest="%(destemail)s", logpath=%(logpath)s, chain="%(chain)s"]
+             %(mta)s-whois-lines[name=%(__name__)s, sender="%(sender)s", dest="%(destemail)s", logpath=%(logpath)s, chain="%(chain)s"]
 
 # See the IMPORTANT note in action.d/xarf-login-attack for when to use this action
 #
@@ -177,16 +189,17 @@ action_xarf = %(banaction)s[name=%(__name__)s, bantime="%(bantime)s", port="%(po
 # ban IP on CloudFlare & send an e-mail with whois report and relevant log lines
 # to the destemail.
 action_cf_mwl = cloudflare[cfuser="%(cfemail)s", cftoken="%(cfapikey)s"]
-                %(mta)s-whois-lines[name=%(__name__)s, dest="%(destemail)s", logpath=%(logpath)s, chain="%(chain)s"]
+                %(mta)s-whois-lines[name=%(__name__)s, sender="%(sender)s", dest="%(destemail)s", logpath=%(logpath)s, chain="%(chain)s"]
 
 # Report block via blocklist.de fail2ban reporting service API
 # 
-# See the IMPORTANT note in action.d/blocklist_de.conf for when to
-# use this action. Create a file jail.d/blocklist_de.local containing
-# [Init]
-# blocklist_de_apikey = {api key from registration]
+# See the IMPORTANT note in action.d/blocklist_de.conf for when to use this action.
+# Specify expected parameters in file action.d/blocklist_de.local or if the interpolation
+# `action_blocklist_de` used for the action, set value of `blocklist_de_apikey`
+# in your `jail.local` globally (section [DEFAULT]) or per specific jail section (resp. in 
+# corresponding jail.d/my-jail.local file).
 #
-action_blocklist_de  = blocklist_de[email="%(sender)s", service=%(filter)s, apikey="%(blocklist_de_apikey)s"]
+action_blocklist_de  = blocklist_de[email="%(sender)s", service=%(filter)s, apikey="%(blocklist_de_apikey)s", agent="%(fail2ban_agent)s"]
 
 # Report ban via badips.com, and use as blacklist
 #
@@ -196,7 +209,17 @@ action_blocklist_de  = blocklist_de[email="%(sender)s", service=%(filter)s, apik
 # NOTE: This action relies on banaction being present on start and therefore
 # should be last action defined for a jail.
 #
-action_badips = badips.py[category="%(name)s", banaction="%(banaction)s"]
+action_badips = badips.py[category="%(__name__)s", banaction="%(banaction)s", agent="%(fail2ban_agent)s"]
+#
+# Report ban via badips.com (uses action.d/badips.conf for reporting only)
+#
+action_badips_report = badips[category="%(__name__)s", agent="%(fail2ban_agent)s"]
+
+# Report ban via abuseipdb.com.
+#
+# See action.d/abuseipdb.conf for usage example and details.
+#
+action_abuseipdb = abuseipdb
 
 # Choose default action.  To change, just override value of 'action' with the
 # interpolation to the chosen action shortcut (e.g.  action_mw, action_mwl, etc) in jail.local
@@ -213,31 +236,29 @@ action = %(action_mwl)s
 #
 
 [sshd]
-enabled = true
-port    = 2222
-logpath = %(sshd_log)s
 
-
-[sshd-ddos]
-# This jail corresponds to the standard configuration in Fail2ban.
-# The mail-whois action send a notification e-mail with a whois request
-# in the body.
+# To use more aggressive sshd modes set filter parameter "mode" in jail.local:
+# normal (default), ddos, extra or aggressive (combines all).
+# See "tests/files/logs/sshd" or "filter.d/sshd.conf" for usage example and details.
+mode=aggressive
 enabled = true
-port    = 2222
+port    = {{ ansible_ssh_port }}
 logpath = %(sshd_log)s
+backend = %(sshd_backend)s
 
 
 [dropbear]
+enabled = true
 
-port     = ssh
+port    = {{ ansible_ssh_port }}
 logpath  = %(dropbear_log)s
+backend  = %(dropbear_backend)s
 
 
 [selinux-ssh]
 
-port     = ssh
+port    = {{ ansible_ssh_port }}
 logpath  = %(auditd_log)s
-maxretry = 5
 
 
 #
@@ -255,7 +276,7 @@ logpath  = %(apache_error_log)s
 # for email addresses. The mail outputs are buffered.
 port     = http,https
 logpath  = %(apache_access_log)s
-bantime  = 172800
+bantime  = 48h
 maxretry = 1
 
 
@@ -263,7 +284,6 @@ maxretry = 1
 
 port     = http,https
 logpath  = %(apache_error_log)s
-maxretry = 6
 
 
 [apache-overflows]
@@ -301,11 +321,20 @@ port     = http,https
 logpath  = %(apache_error_log)s
 maxretry = 2
 
+
 [apache-shellshock]
 
 port    = http,https
 logpath = %(apache_error_log)s
 maxretry = 1
+
+
+[openhab-auth]
+
+filter = openhab
+action = iptables-allports[name=NoAuthFailures]
+logpath = /opt/openhab/logs/request.log
+
 
 [nginx-http-auth]
 {% if nginx_enabled is defined %}
@@ -316,13 +345,24 @@ enabled	= true
 port    = http,https
 logpath = %(nginx_error_log)s
 
+# To use 'nginx-limit-req' jail you should have `ngx_http_limit_req_module` 
+# and define `limit_req` and `limit_req_zone` as described in nginx documentation
+# http://nginx.org/en/docs/http/ngx_http_limit_req_module.html
+# or for example see in 'config/filter.d/nginx-limit-req.conf'
+[nginx-limit-req]
+port    = http,https
+logpath = %(nginx_error_log)s
+
 [nginx-botsearch]
 {% if nginx_enabled is defined %}
 enabled	= true
+{% else %}
+
 {% endif %}
 port     = http,https
 logpath  = %(nginx_error_log)s
 maxretry = 2
+
 
 # Ban attackers that try to use PHP's URL-fopen() functionality
 # through GET/POST variables. - Experimental, with more than a year
@@ -355,7 +395,9 @@ logpath = %(lighttpd_error_log)s
 [roundcube-auth]
 
 port     = http,https
-logpath  = logpath = %(roundcube_errors_log)s
+logpath  = %(roundcube_errors_log)s
+# Use following line in your jail.local if roundcube logs to journal.
+#backend = %(syslog_backend)s
 
 
 [openwebmail]
@@ -388,7 +430,6 @@ logpath  = /var/log/sogo/sogo.log
 
 logpath  = /var/log/tine20/tine20.log
 port     = http,https
-maxretry = 5
 
 
 #
@@ -400,6 +441,7 @@ maxretry = 5
 
 port     = http,https
 logpath  = %(syslog_daemon)s
+backend  = %(syslog_backend)s
 
 [guacamole]
 
@@ -408,7 +450,6 @@ logpath  = /var/log/tomcat*/catalina.out
 
 [monit]
 #Ban clients brute-forcing the monit gui login
-filter   = monit
 port = 2812
 logpath  = /var/log/monit
 
@@ -417,12 +458,14 @@ logpath  = /var/log/monit
 
 port    = 10000
 logpath = %(syslog_authpriv)s
+backend = %(syslog_backend)s
 
 
 [froxlor-auth]
 
 port    = http,https
 logpath  = %(syslog_authpriv)s
+backend  = %(syslog_backend)s
 
 
 #
@@ -451,27 +494,28 @@ logpath = /var/log/3proxy.log
 
 port     = ftp,ftp-data,ftps,ftps-data
 logpath  = %(proftpd_log)s
+backend  = %(proftpd_backend)s
 
 
 [pure-ftpd]
 
 port     = ftp,ftp-data,ftps,ftps-data
 logpath  = %(pureftpd_log)s
-maxretry = 6
+backend  = %(pureftpd_backend)s
 
 
 [gssftpd]
 
 port     = ftp,ftp-data,ftps,ftps-data
 logpath  = %(syslog_daemon)s
-maxretry = 6
+backend  = %(syslog_backend)s
 
 
 [wuftpd]
 
 port     = ftp,ftp-data,ftps,ftps-data
 logpath  = %(wuftpd_log)s
-maxretry = 6
+backend  = %(wuftpd_backend)s
 
 
 [vsftpd]
@@ -498,43 +542,41 @@ logpath  = /root/path/to/assp/logs/maillog.txt
 
 port     = smtp,465,submission
 logpath  = %(syslog_mail)s
+backend  = %(syslog_backend)s
 
 
 [postfix]
-
-{% if inventory_hostname_short == "mail" %}
-enabled = true
-{% endif %}
-port     = smtp,465,submission
-logpath  = /var/log/mail.log
+# To use another modes set filter parameter "mode" in jail.local:
+mode    = more
+port    = smtp,465,submission
+logpath = %(postfix_log)s
+backend = %(postfix_backend)s
 
 
 [postfix-rbl]
-{% if inventory_hostname_short == "mail" %}
-enabled = true
-{% endif %}
 
+filter   = postfix[mode=rbl]
 port     = smtp,465,submission
-logpath  = %(syslog_mail)s
+logpath  = %(postfix_log)s
+backend  = %(postfix_backend)s
 maxretry = 1
 
 
 [sendmail-auth]
 
-{% if inventory_hostname_short == "mail" %}
-enabled = true
-{% endif %}
 port    = submission,465,smtp
 logpath = %(syslog_mail)s
+backend = %(syslog_backend)s
 
 
 [sendmail-reject]
-
-{% if inventory_hostname_short == "mail" %}
-enabled = true
-{% endif %}
+# To use more aggressive modes set filter parameter "mode" in jail.local:
+# normal (default), extra or aggressive
+# See "tests/files/logs/sendmail-reject" or "filter.d/sendmail-reject.conf" for usage example and details.
+#mode    = normal
 port     = smtp,465,submission
 logpath  = %(syslog_mail)s
+backend  = %(syslog_backend)s
 
 
 [qmail-rbl]
@@ -550,15 +592,14 @@ logpath = /service/qmail/log/main/current
 
 port    = pop3,pop3s,imap,imaps,submission,465,sieve
 logpath = %(dovecot_log)s
+backend = %(dovecot_backend)s
 
 
 [sieve]
 
-{% if inventory_hostname_short == "mail" %}
-enabled = true
-{% endif %}
 port   = smtp,465,submission
 logpath = %(dovecot_log)s
+backend = %(dovecot_backend)s
 
 
 [solid-pop3d]
@@ -568,7 +609,8 @@ logpath = %(solidpop3d_log)s
 
 
 [exim]
-
+# see filter.d/exim.conf for further modes supported from filter:
+#mode = normal
 port   = smtp,465,submission
 logpath = %(exim_main_log)s
 
@@ -592,47 +634,47 @@ logpath = /opt/kerio/mailserver/store/logs/security.log
 
 [courier-auth]
 
-port     = smtp,465,submission,imap3,imaps,pop3,pop3s
+port     = smtp,465,submission,imap,imaps,pop3,pop3s
 logpath  = %(syslog_mail)s
+backend  = %(syslog_backend)s
 
 
 [postfix-sasl]
 
-{% if inventory_hostname_short == "mail" %}
-enabled = true
-{% endif %}
-port     = smtp,465,submission,imap3,imaps,pop3,pop3s
+filter   = postfix[mode=auth]
+port     = smtp,465,submission,imap,imaps,pop3,pop3s
 # You might consider monitoring /var/log/mail.warn instead if you are
 # running postfix since it would provide the same log lines at the
 # "warn" level but overall at the smaller filesize.
 logpath  = %(postfix_log)s
+backend  = %(postfix_backend)s
 
 
 [perdition]
 
-port   = imap3,imaps,pop3,pop3s
+port   = imap,imaps,pop3,pop3s
 logpath = %(syslog_mail)s
+backend = %(syslog_backend)s
 
 
 [squirrelmail]
 
-port = smtp,465,submission,imap2,imap3,imaps,pop3,pop3s,http,https,socks
+port = smtp,465,submission,imap,imap2,imaps,pop3,pop3s,http,https,socks
 logpath = /var/lib/squirrelmail/prefs/squirrelmail_access_log
 
 
 [cyrus-imap]
 
-{% if inventory_hostname_short == "mail" %}
-enabled = true
-{% endif %}
-port   = imap3,imaps
+port   = imap,imaps
 logpath = %(syslog_mail)s
+backend = %(syslog_backend)s
 
 
 [uwimap-auth]
 
-port   = imap3,imaps
+port   = imap,imaps
 logpath = %(syslog_mail)s
+backend = %(syslog_backend)s
 
 
 #
@@ -714,7 +756,14 @@ maxretry = 10
 
 port     = 3306
 logpath  = %(mysql_log)s
-maxretry = 5
+backend  = %(mysql_backend)s
+
+
+# Log wrong MongoDB auth (for details see filter 'filter.d/mongodb-auth.conf')
+[mongodb-auth]
+# change port when running with "--shardsvr" or "--configsvr" runtime operation
+port     = 27017
+logpath  = /var/log/mongodb/mongodb.log
 
 
 # Jail for more extended banning of persistent abusers
@@ -727,10 +776,9 @@ maxretry = 5
 [recidive]
 
 logpath  = /var/log/fail2ban.log
-banaction = iptables-allports
-bantime  = 604800  ; 1 week
-findtime = 86400   ; 1 day
-maxretry = 5
+banaction = %(banaction_allports)s
+bantime  = 1w
+findtime = 1d
 
 
 # Generic filter for PAM. Has to be used with action which bans all
@@ -738,14 +786,16 @@ maxretry = 5
 
 [pam-generic]
 # pam-generic filter can be customized to monitor specific subset of 'tty's
-banaction = iptables-allports
+banaction = %(banaction_allports)s
 logpath  = %(syslog_authpriv)s
+backend  = %(syslog_backend)s
 
 
 [xinetd-fail]
 
 banaction = iptables-multiport-log
 logpath   = %(syslog_daemon)s
+backend   = %(syslog_backend)s
 maxretry  = 2
 
 
@@ -774,37 +824,77 @@ action  = %(banaction)s[name=%(__name__)s-tcp, port="%(tcpport)s", protocol="tcp
 # nobody except your own Nagios server should ever probe nrpe
 [nagios]
 
-enabled  = false
 logpath  = %(syslog_daemon)s     ; nrpe.cfg may define a different log_facility
+backend  = %(syslog_backend)s
 maxretry = 1
 
 
 [oracleims]
 # see "oracleims" filter file for configuration requirement for Oracle IMS v6 and above
-enabled = false
 logpath = /opt/sun/comms/messaging64/log/mail.log_current
-maxretry = 6
-banaction = iptables-allports
+banaction = %(banaction_allports)s
 
 [directadmin]
-enabled = false
 logpath = /var/log/directadmin/login.log
 port = 2222
 
 [portsentry]
-enabled  = false
 logpath  = /var/lib/portsentry/portsentry.history
 maxretry = 1
 
 [pass2allow-ftp]
 # this pass2allow example allows FTP traffic after successful HTTP authentication
 port         = ftp,ftp-data,ftps,ftps-data
-# knocking_url variable must be overridden to some secret value in filter.d/apache-pass.local
-filter       = apache-pass
+# knocking_url variable must be overridden to some secret value in jail.local
+knocking_url = /knocking/
+filter       = apache-pass[knocking_url="%(knocking_url)s"]
 # access log of the website with HTTP auth
 logpath      = %(apache_access_log)s
 blocktype    = RETURN
 returntype   = DROP
-bantime      = 3600
+action       = %(action_)s[blocktype=%(blocktype)s, returntype=%(returntype)s]
+bantime      = 1h
 maxretry     = 1
 findtime     = 1
+
+
+[murmur]
+# AKA mumble-server
+port     = 64738
+action   = %(banaction)s[name=%(__name__)s-tcp, port="%(port)s", protocol=tcp, chain="%(chain)s", actname=%(banaction)s-tcp]
+           %(banaction)s[name=%(__name__)s-udp, port="%(port)s", protocol=udp, chain="%(chain)s", actname=%(banaction)s-udp]
+logpath  = /var/log/mumble-server/mumble-server.log
+
+
+[screensharingd]
+# For Mac OS Screen Sharing Service (VNC)
+logpath  = /var/log/system.log
+logencoding = utf-8
+
+[haproxy-http-auth]
+# HAProxy by default doesn't log to file you'll need to set it up to forward
+# logs to a syslog server which would then write them to disk.
+# See "haproxy-http-auth" filter for a brief cautionary note when setting
+# maxretry and findtime.
+logpath  = /var/log/haproxy.log
+
+[slapd]
+port    = ldap,ldaps
+logpath = /var/log/slapd.log
+
+[domino-smtp]
+port    = smtp,ssmtp
+logpath = /home/domino01/data/IBM_TECHNICAL_SUPPORT/console.log
+
+[phpmyadmin-syslog]
+port    = http,https
+logpath = %(syslog_authpriv)s
+backend = %(syslog_backend)s
+
+
+[zoneminder]
+# Zoneminder HTTP/HTTPS web interface auth
+# Logs auth failures to apache2 error log
+port    = http,https
+logpath = %(apache_error_log)s
+

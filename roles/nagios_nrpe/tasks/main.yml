@@ -1,0 +1,386 @@
+---
+
+- name: Install NRPE dependencies
+  package: 
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - git
+    - autoconf
+    - gcc
+    - libc6
+    - libmcrypt-dev
+    - make
+    - libssl-dev
+    - wget
+  when: ansible_os_family == "Debian"
+
+- name: Install NRPE dependencies
+  package: 
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - git
+    - gcc
+    - glibc
+    - glibc-common
+    - openssl
+    - openssl-devel
+    - perl
+    - wget
+  when: ansible_os_family == "RedHat"
+
+#--------------------------------------------------
+# CREATE NAGIOS USERS
+#--------------------------------------------------
+- name: Create nagios system group
+  group:
+    name: nagios
+  tags: nagios_install
+
+- name: Create nagios command system group
+  group:
+    name: nagcmd
+  tags: nagios_install
+
+- name: Create nagios system user
+  user:
+    system: yes
+    name: nagios
+    group: nagios
+    groups: nagcmd
+  tags: nagios_install
+
+#--------------------------------------------------
+# INSTALLATION NAGIOS NRPE
+#--------------------------------------------------
+- name: Retrieve and Uncompress Nagios NRPE
+  unarchive:
+    src: https://github.com/NagiosEnterprises/nrpe/releases/download/nrpe-3.2.1/nrpe-3.2.1.tar.gz
+    remote_src: yes
+    dest: /root/
+    creates: /root/nrpre-3.2.1
+  register: nrpe_downloaded
+
+- name: Initial configuration Nagios NRPE
+  shell: ./configure --enable-command-args --with-nagios-user=nagios --with-nagios-group=nagios --with-ssl=/usr/bin/openssl --with-ssl-lib=/usr/lib/x86_64-linux-gnu --enable-ssl
+  args:
+    chdir: /root/nrpe-3.2.1
+  async: 500
+  poll: 10
+  when: nrpe_downloaded.skipped is not defined and nrpe_downloaded.changed
+
+- name: Make nagios NRPE
+  make:
+    chdir: /root/nrpe-3.2.1
+    target: "{{ item }}"
+  with_items:
+    - all
+    - install
+    - install-config
+    - install-init
+  async: 120
+  poll: 10
+  when: nrpe_downloaded.skipped is not defined and nrpe_downloaded.changed
+
+- name: Systemd daemon reload
+  systemd: daemon-reload=yes
+  when: nrpe_downloaded.skipped is not defined and nrpe_downloaded.changed
+
+- name: Make NRPE start with system
+  service:
+    name: nrpe
+    state: started
+    enabled: true
+
+- name: Check that nrpe is defined in services
+  lineinfile:
+    name: /etc/services
+    regexp: '^nrpe'
+    line: "nrpe            5666/tcp                        # Nagios Remote Plugin Executor"
+
+#--------------------------------------------------
+# INSTALLATION NAGIOS PLUGINS
+#--------------------------------------------------
+- name: Retrieve and Uncompress Nagios Plugins
+  unarchive:
+    src: https://github.com/nagios-plugins/nagios-plugins/releases/download/release-2.2.1/nagios-plugins-2.2.1.tar.gz
+    remote_src: yes
+    dest: /root/
+    creates: /root/nagios-plugins-2.2.1
+  register: plugins_downloaded
+
+- name: Initial configuration Nagios Plugins
+  shell: ./configure --with-nagios-group=nagios --with-command-group=nagcmd --with-openssl
+  args:
+    chdir: /root/nagios-plugins-2.2.1
+  async: 500
+  poll: 10
+  when: plugins_downloaded.skipped is not defined and plugins_downloaded.changed
+
+- name: Make nagios-plugins
+  make:
+    chdir: /root/nagios-plugins-2.2.1
+    target: "{{ item }}"
+  with_items:
+    - all
+    - install
+  async: 120
+  poll: 10
+  when: plugins_downloaded.skipped is not defined and plugins_downloaded.changed
+
+#--------------------------------------------------
+# CONFIGURATION NRPE
+#--------------------------------------------------
+- name: set Nagios server IP address in allowed hosts
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "^allowed_hosts="
+    line: allowed_hosts={{ groups['docker_nagios'] | map('extract', hostvars, ['ansible_ssh_host']) | join(',') }},127.0.0.1
+  when: inventory_hostname not in groups.docker_nagios
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: set Nagios server IP address in allowed hosts
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "^allowed_hosts="
+    line: allowed_hosts=172.23.0.2,127.0.0.1
+  when: inventory_hostname in groups.docker_nagios
+  notify: restart nrpe
+  tags: nrpe_config
+
+#--------------------------------------------------
+# AJOUT CUSTOM SCRIPTs
+#--------------------------------------------------
+- name: add check_docker script
+  get_url: 
+    url: https://raw.githubusercontent.com/timdaman/check_docker/master/check_docker/check_docker.py
+    dest: /usr/local/nagios/libexec/custom-plugin/check_docker
+    mode: 0555
+
+- name: add nagios to www-data group
+  user:
+    name: nagios
+    groups: www-data
+    append: yes
+  when: inventory_hostname in groups['owncloud_server'] or inventory_hostname in groups['docker_owncloud'] or inventory_hostname in groups['docker_nextcloud']
+
+- name: add nagios to docker group
+  user:
+    name: nagios
+    groups: docker
+    append: yes
+  when: inventory_hostname in groups['docker']
+
+#--------------------------------------------------
+# MODIFICATION NRPE.CFG
+#--------------------------------------------------
+
+- name: add custom plugins section in nrpe.cfg
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    line: "# Custom Services"
+  tags: nrpe_config
+
+- name: modify plugin check hda1 in nrpe.cfg for physical servers - new config
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_hda1"
+    line: "command[check_hda1]=/usr/local/nagios/libexec/check_disk -w 20% -c 10% -p /"
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: modify procs number in nrpe.cfg for server with both odoo and owncloud
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_total_procs"
+    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 225 -c 250
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: modify procs number in nrpe.cfg for servers with cloud docker only
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_total_procs"
+    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 210 -c 230
+  when: inventory_hostname not in groups.docker_odoo and inventory_hostname in groups.docker_owncloud | union(groups.docker_nextcloud)
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: modify procs number in nrpe.cfg for servers with odoo and cloud dockers but no auth docker
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_total_procs"
+    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 275 -c 300
+  when: inventory_hostname in groups.docker_odoo | intersect(groups.docker_owncloud | union(groups.docker_nextcloud)) and inventory_hostname not in groups.docker_auth
+  notify: restart nrpe
+  tags: nrpe_config
+    
+- name: modify procs number in nrpe.cfg for servers with odoo, cloud and auth dockers but nagios
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_total_procs"
+    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 300 -c 320
+  when: inventory_hostname in groups.docker_odoo | intersect(groups.docker_owncloud | union(groups.docker_nextcloud)) | intersect(groups.docker_auth) and inventory_hostname not in groups.docker_nagios
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: modify procs number in nrpe.cfg for servers with odoo, cloud, nagios and auth dockers
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_total_procs"
+    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 385 -c 400
+  when: inventory_hostname in groups.docker_odoo | intersect(groups.docker_owncloud | union(groups.docker_nextcloud)) | intersect(groups.docker_auth) | intersect(groups.docker_nagios)
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check processs sshd
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_procs_sshd"
+    line: "command[check_procs_sshd]=/usr/local/nagios/libexec/check_procs -w 2 -c 1: -C sshd -a -D"
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: Modify check load in nrpe.cfg 
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_load -r -w"
+    line: "command[check_load]=/usr/local/nagios/libexec/check_load -r -w .35,.30,.25 -c .55,.50,.45"
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check processs nginx
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_procs_nginx"
+    line: "command[check_procs_nginx]=/usr/local/nagios/libexec/check_procs -w 5 -c 2: -C nginx"
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check processs odoo
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_procs_odoo"
+    line: "command[check_procs_odoo]=/usr/local/nagios/libexec/check_procs -w 2 -c 1: -C python -a odoo-bin"
+  when: inventory_hostname in groups.odoo_server
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check process owncloud
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_procs_owncloud"
+    line: "command[check_procs_owncloud]=/usr/local/nagios/libexec/check_procs -w 10 -c 2: -C php-fpm7.0"
+  when: inventory_hostname in groups.owncloud_server
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker odoo on SSD1 server
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_odoo]"
+    line: "command[check_docker_odoo]=/usr/local/nagios/libexec/custom-plugin/check_docker --container odoo_.* --cpu 10:15 --memory 35:45:% --status running"
+  when: inventory_hostname in groups.docker_odoo and inventory_hostname not in groups.docker_owncloud | union(groups.docker_nextcloud)
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker odoo on SSD2/3 servers
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_odoo]"
+    line: "command[check_docker_odoo]=/usr/local/nagios/libexec/custom-plugin/check_docker --container odoo.* --cpu 10:15 --memory 30:40:% --status running"
+  when: inventory_hostname in groups.docker_odoo | intersect(groups.docker_owncloud) or inventory_hostname in groups.docker_odoo | intersect(groups.docker_nextcloud)
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker odoo test
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_odoo_test"
+    line: "command[check_docker_odoo_test]=/usr/local/nagios/libexec/custom-plugin/check_docker --container testodoo.* --cpu 10:15 --memory 20:25:% --status running"
+  when: inventory_hostname in groups.docker_odoo
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker whitelists
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_whitelists"
+    line: "command[check_docker_whitelists]=/usr/local/nagios/libexec/custom-plugin/check_docker --container whitelists.* --cpu 5:10 --memory 5:7:% --status running"
+  when: inventory_hostname in groups.docker_odoo
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker owncloud when alone
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_cloud"
+    line: "command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker --container owncloud.* --cpu 70:80 --memory 65:85:% --status running"
+  when: inventory_hostname not in groups.docker_odoo and inventory_hostname in groups.docker_owncloud
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker nextcloud when alone
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_cloud"
+    line: "command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker --container nextcloud.* --cpu 70:80 --memory 65:85:% --status running"
+  when: inventory_hostname not in groups.docker_odoo and inventory_hostname in groups.docker_nextcloud
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker owncloud for servers with Odoo as well
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_cloud"
+    line: "command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker --container owncloud.* --cpu 70:80 --memory 15:25:% --status running"
+  when: inventory_hostname in groups.docker_odoo and inventory_hostname in groups.docker_owncloud
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker nextcloud for servers with Odoo as well
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_cloud"
+    line: "command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker --container nextcloud.* --cpu 70:80 --memory 15:25:% --status running"
+  when: inventory_hostname in groups.docker_odoo and inventory_hostname in groups.docker_nextcloud
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker proxy
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_proxy"
+    line: "command[check_docker_proxy]=/usr/local/nagios/libexec/custom-plugin/check_docker --container inverseproxy.* --cpu 10:15 --memory 10:15:% --status running"
+  when: inventory_hostname in groups.docker
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker nagios
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_nagios"
+    line: "command[check_docker_nagios]=/usr/local/nagios/libexec/custom-plugin/check_docker --container nagios.* --cpu 10:15 --memory 10:15:% --status running"
+  when: inventory_hostname in groups.docker_nagios
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker ldap
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_ldap"
+    line: "command[check_docker_ldap]=/usr/local/nagios/libexec/custom-plugin/check_docker --container .*ldap.* --cpu 5:10 --memory 12:17:% --status running"
+  when: inventory_hostname in groups.docker_auth
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker sso
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_sso"
+    line: "command[check_docker_sso]=/usr/local/nagios/libexec/custom-plugin/check_docker --container sso --cpu 5:10 --memory 7:12:% --status running"
+  when: inventory_hostname in groups.docker_auth
+  notify: restart nrpe
+  tags: nrpe_config

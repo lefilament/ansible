@@ -1,12 +1,36 @@
-[mot-de-passe:children]
-vps_server
+[physical_server]
+NewHost1
+
+[dedicated_server]
+NewHost2
 
 [vps_server]
-NewHost
+NewHost3
+
+[docker]
+NewHost2
+NewHost3
+
+[docker_odoo]
+NewHost2
+
+[docker_nagios]
+NewHost2
+
+[docker_owncloud]
+NewHost2
+
+[docker_nextcloud]
+NewHost3
+
+[docker_auth]
+NewHost2
 
 [odoo_server]
-NewHost
+NewHost1
 
 [owncloud_server]
-NewHost
+NewHost1
 
+[nagios_server]
+NewHost1

@@ -1,0 +1,30 @@
+---
+
+- name: Create docker auth repo
+  file:
+    name: /home/docker/auth
+    state: directory
+    owner: root
+    group: root
+
+## Install Auth docker
+- name: Install Auth docker architecture
+  template:
+    src: docker-compose.yaml.j2
+    dest: /home/docker/auth/docker-compose.yaml
+    owner: root
+    group: root
+    mode: 0400
+
+- name: start auth docker compose
+  docker_service:
+    project_src: /home/docker/auth
+  async: 120
+  poll: 10
+  tags: start_docker
+  when: not ansible_check_mode
+
+- name: check that auth docker is started
+  docker_service:
+    project_src: /home/docker/auth
+  when: ansible_check_mode

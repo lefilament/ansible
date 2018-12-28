@@ -1,0 +1,12 @@
+[submodule "roles/docker_owncloud"]
+	path = roles/docker_owncloud
+	url = git@github.com:lefilament/ansible_role_owncloud_docker.git
+[submodule "roles/docker_nextcloud"]
+	path = roles/docker_nextcloud
+	url = git@github.com:lefilament/ansible_role_nextcloud_docker.git
+[submodule "roles/docker_odoo"]
+	path = roles/docker_odoo
+	url = git@github.com:lefilament/ansible_role_odoo_docker.git
+[submodule "roles/docker_server"]
+	path = roles/docker_server
+	url = git@github.com:lefilament/ansible_role_docker_server.git

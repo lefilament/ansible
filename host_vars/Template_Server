@@ -1,0 +1,10 @@
+## Ansible configuration for connecting to remote host
+# IP address
+ansible_ssh_host: "{{ SERVER_srv_ip }}"
+# User
+host_user: "{{ SERVER_srv_user }}"
+# User password
+host_password: "{{ SERVER_srv_pass }}"
+# Root password
+host_root_password: "{{ SERVER_srv_root_pass }}"
+

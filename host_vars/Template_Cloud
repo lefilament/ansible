@@ -1,0 +1,18 @@
+## Nextcloud configuration
+# Nextcloud URL
+cloud_url: "{{ SERVER_cloud_url }}"
+# Nextcloud DB password
+cloud_db_pass: "{{ SERVER_cloud_db_pass }}"
+# Nextcloud MySQL root password
+cloud_db_root: "{{ SERVER_cloud_db_root_pass }}"
+# Nextcloud Admin user
+cloud_admin: "{{ SERVER_cloud_user }}"
+# Nextcloud Admin password
+cloud_admin_pass: "{{ SERVER_cloud_pass }}"
+
+## Document collaboration configuration
+# Document collaboration present for OnlyOffice ?
+cloud_onlyoffice: yes
+# Document collaboration OnlyOffice URL
+cloud_onlyoffice_url: "{{ SERVER_onlyoffice_url }}"
+

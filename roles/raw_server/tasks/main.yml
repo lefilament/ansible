@@ -5,11 +5,11 @@
   tags: raw-debian
 
 - name: Initial packages upgrade using raw module
-  raw: apt-get upgrade -y
+  raw: apt-get upgrade -y --no-install-recommends
   tags: raw-debian
 
 - name: Initial python installation using raw module
-  raw: apt-get install -y python python-simplejson aptitude 
+  raw: apt-get install -y python python-simplejson aptitude --no-install-recommends
   tags: raw-debian
 
 - name: Initial packages update using raw module

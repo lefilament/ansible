@@ -1,0 +1,106 @@
+version: '2'
+services:
+  openldap:
+    image: remifilament/openldap
+    container_name: openldap
+    restart: always
+    environment:
+      LDAP_LOG_LEVEL: "256"
+      LDAP_ORGANISATION: "{{ ldap_org }}"
+      LDAP_DOMAIN: "{{ ldap_domain }}"
+      LDAP_BASE_DN: "{{ ldap_base_dn }}"
+      LDAP_ADMIN_PASSWORD: "{{ ldap_admin_pass }}"
+      LDAP_CONFIG_PASSWORD: "{{ ldap_config_pass }}"
+      LDAP_READONLY_USER: "true"
+      LDAP_READONLY_USER_USERNAME: "readonly"
+      LDAP_READONLY_USER_PASSWORD: "{{ ldap_readonly_pass }}"
+      LDAP_RFC2307BIS_SCHEMA: "false"
+      LDAP_BACKEND: "mdb"
+      LDAP_TLS: "true"
+      LDAP_TLS_CRT_FILENAME: "ldap.crt"
+      LDAP_TLS_KEY_FILENAME: "ldap.key"
+      LDAP_TLS_CA_CRT_FILENAME: "ca.crt"
+      LDAP_TLS_ENFORCE: "false"
+      LDAP_TLS_CIPHER_SUITE: "SECURE256:-VERS-SSL3.0"
+      LDAP_TLS_PROTOCOL_MIN: "3.1"
+      LDAP_TLS_VERIFY_CLIENT: "demand"
+      LDAP_REPLICATION: "false"
+      KEEP_EXISTING_CONFIG: "false"
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+      LDAP_SSL_HELPER_PREFIX: "ldap"
+    tty: true
+    stdin_open: true
+    volumes:
+      - db:/var/lib/ldap
+      - config:/etc/ldap/slapd.d
+    domainname: "{{ ldap_domain }}" # important: same as hostname
+    hostname: "{{ ldap_domain }}"
+    networks:
+      default:
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:latest
+    container_name: phpldapadmin
+    restart: unless-stopped
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: "openldap"
+      PHPLDAPADMIN_HTTPS: "false"
+    depends_on:
+      - openldap
+    networks:
+      default:
+      inverseproxy_shared:
+    labels:
+      traefik.docker.network: "inverseproxy_shared"
+      traefik.enable: "true"
+      traefik.frontend.passHostHeader: "true"
+      traefik.port: "80"
+      traefik.own.frontend.rule: "Host:{{ ldap_url }}"
+
+  sso:
+    image: tiredofit/lemonldap:1.9-debian
+    container_name: sso
+    restart: always
+    volumes:
+    - lemonldap_etc:/etc/lemonldap-ng
+    - lemonldap_conf:/var/lib/lemonldap-ng/conf
+    - lemonldap_sessions:/var/lib/lemonldap-ng/sessions
+    - lemonldap_psessions:/var/lib/lemonldap-ng/psessions
+    - lemonldap_logs:/www/logs
+    environment:
+    - ZABBIX_HOSTNAME=lemonldap-app
+    - DOMAIN_NAME={{ ldap_domain }}
+    - MANAGER_HOSTNAME=manager.{{ sso_url }}
+    - PORTAL_HOSTNAME={{ sso_url }}
+    - HANDLER_HOSTNAME=handler.{{ sso_url }}
+    - MODE=MASTER
+    - CONFIG_TYPE=FILE
+    - SESSION_TYPE=FILE
+    - HANDLER_CACHE_TYPE=FILE
+    labels:
+      traefik.docker.network: "inverseproxy_shared"
+      traefik.enable: "true"
+      traefik.frontend.passHostHeader: "true"
+      traefik.port: "80"
+      traefik.own.frontend.rule: "Host:manager.{{ sso_url }}, {{ sso_url }}, handler.{{ sso_url }}"
+      traefik.frontend.headers.isDevelopment: "true"
+    networks:
+      default:
+      inverseproxy_shared:
+
+networks:
+    default:
+        internal: true
+        driver_opts:
+            encrypted: 1
+    inverseproxy_shared:
+        external: true
+
+volumes:
+    db:
+    config:
+    lemonldap_etc:
+    lemonldap_conf:
+    lemonldap_sessions:
+    lemonldap_psessions:
+    lemonldap_logs:

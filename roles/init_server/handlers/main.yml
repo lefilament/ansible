@@ -2,6 +2,3 @@
 
 - name: restart-sshd
   service: name=sshd state=restarted
-
-- name: reload-nfs
-  service: name=nfs-kernel-server state=reloaded

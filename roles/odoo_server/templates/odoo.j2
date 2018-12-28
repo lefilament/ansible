@@ -3,19 +3,19 @@ upstream odoo {
 }
 server {
         listen 80;
-        server_name {{ OE_URL }};
+        server_name {{ odoo_url }};
         # Strict Transport Security
         add_header Strict-Transport-Security max-age=2592000;
-        rewrite ^/.*$ https://{{ OE_URL }}$request_uri? permanent;
+        rewrite ^/.*$ https://{{ odoo_url }}$request_uri? permanent;
 }
 {% if www_site is defined %}
 server {
         listen 80;
         listen 443;
-        server_name www.{{ OE_URL }};
+        server_name www.{{ odoo_url }};
         # Strict Transport Security
         add_header Strict-Transport-Security max-age=2592000;
-        rewrite ^/.*$ https://{{ OE_URL }}$request_uri? permanent;
+        rewrite ^/.*$ https://{{ odoo_url }}$request_uri? permanent;
 
         # Specifies the maximum accepted body size of a client request,
         # as indicated by the request header Content-Length.
@@ -24,8 +24,8 @@ server {
         # add ssl specific settings
         keepalive_timeout 60;
         ssl on;
-        ssl_certificate /etc/letsencrypt/live/{{ OE_URL }}/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/{{ OE_URL }}/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/{{ odoo_url }}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{{ odoo_url }}/privkey.pem;
         # limit ciphers
         ssl_ciphers HIGH:!ADH:!MD5;
         ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2;
@@ -34,7 +34,7 @@ server {
 {% endif %}
 server {
         listen 443;
-        server_name {{ OE_URL }};
+        server_name {{ odoo_url }};
 
         # Specifies the maximum accepted body size of a client request,
         # as indicated by the request header Content-Length.
@@ -43,8 +43,8 @@ server {
         # add ssl specific settings
         keepalive_timeout 60;
         ssl on;
-        ssl_certificate /etc/letsencrypt/live/{{ OE_URL }}/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/{{ OE_URL }}/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/{{ odoo_url }}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{{ odoo_url }}/privkey.pem;
         # limit ciphers
         ssl_ciphers HIGH:!ADH:!MD5;
         ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2;
@@ -84,10 +84,10 @@ server {
                 root /var/www/html/;
         }
 }
-{% if OE_URL2 is defined %}
+{% if odoo_url2 is defined %}
 server {
         listen 443;
-        server_name {{ OE_URL2 }};
+        server_name {{ odoo_url2 }};
 
         # Specifies the maximum accepted body size of a client request,
         # as indicated by the request header Content-Length.
@@ -96,8 +96,8 @@ server {
         # add ssl specific settings
         keepalive_timeout 60;
         ssl on;
-        ssl_certificate /etc/letsencrypt/live/{{ OE_URL }}/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/{{ OE_URL }}/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/{{ odoo_url }}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{{ odoo_url }}/privkey.pem;
         # limit ciphers
         ssl_ciphers HIGH:!ADH:!MD5;
         ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2;

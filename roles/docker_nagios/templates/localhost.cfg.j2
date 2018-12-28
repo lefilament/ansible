@@ -1,0 +1,56 @@
+###############################################################################
+# LOCALHOST.CFG - SAMPLE OBJECT CONFIG FILE FOR MONITORING THIS MACHINE
+#
+#
+# NOTE: This config file is intended to serve as an *extremely* simple 
+#       example of how you can create configuration entries to monitor
+#       the local (Linux) machine.
+#
+###############################################################################
+
+
+
+
+###############################################################################
+###############################################################################
+#
+# HOST DEFINITION
+#
+###############################################################################
+###############################################################################
+
+# Define a host for the local machine
+
+define host{
+        use                     linux-server
+        host_name               Nagios Server
+        alias                   Nagios Server
+        address                 127.0.0.1
+        }
+
+
+###############################################################################
+###############################################################################
+#
+# SERVICE DEFINITIONS
+#
+###############################################################################
+###############################################################################
+
+
+# Define a service to "ping" the local machine
+
+define service{
+        use                             generic-service
+        host_name                       Nagios Server
+        service_description             PING
+	check_command			check_ping!100.0,20%!500.0,60%
+        }
+
+
+define service{
+        use                             generic-service
+        host_name                       Nagios Server
+        service_description             Nagios Service
+        check_command                   check_local_procs!20!2:!nagios
+        }

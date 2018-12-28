@@ -6,6 +6,7 @@
     upgrade: full
     autoremove: yes
     force: yes
+    install_recommends: no
   when: ansible_os_family == "Debian"
 
 - name: Remove unecessary Samba packages
@@ -55,10 +56,9 @@
 
 - name: add public key to authorized keys
   authorized_key:
-    key: "{{ item }}"
+    key: "{{ depl_ssh_pubkey }}"
     user: "{{ host_user }}"
-  with_items:
-    - "{{ depl_ssh_pubkey }}"
+    exclusive: yes
   tags: sshd
 
 - name: Disable access with dsa key

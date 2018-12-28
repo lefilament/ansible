@@ -1,0 +1,20 @@
+## LDAP parameters
+# Organization name
+ldap_org: "{{ SERVER_ldap_org }}"
+# Domain
+ldap_domain: "{{ SERVER_ldap_domain }}"
+# Base DN
+ldap_base_dn: "{{ SERVER_ldap_base_dn }}"
+# Admin password
+ldap_admin_pass: "{{ SERVER_ldap_admin_pass }}"
+# Configuration password
+ldap_config_pass: "{{ SERVER_ldap_config_pass }}"
+# Readonly password
+ldap_readonly_pass: "{{ SERVER_ldap_readonly_pass }}"
+# URL for PHP MyAdmin
+ldap_url: "{{ SERVER_ldap_url }}"
+
+## SSO parameters
+# URL for SSO portal
+sso_url: "{{ SERVER_sso_url }}"
+

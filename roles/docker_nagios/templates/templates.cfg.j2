@@ -1,0 +1,277 @@
+###############################################################################
+# TEMPLATES.CFG - SAMPLE OBJECT TEMPLATES
+#
+#
+# NOTES: This config file provides you with some example object definition
+#        templates that are refered by other host, service, contact, etc.
+#        definitions in other config files.
+#       
+#        You don't need to keep these definitions in a separate file from your
+#        other object definitions.  This has been done just to make things
+#        easier to understand.
+#
+###############################################################################
+
+
+
+###############################################################################
+###############################################################################
+#
+# CONTACT TEMPLATES
+#
+###############################################################################
+###############################################################################
+
+# Generic contact definition template - This is NOT a real contact, just a template!
+
+define contact{
+        name                            generic-contact    	; The name of this contact template
+        service_notification_period     24x7			; service notifications can be sent anytime
+        host_notification_period        24x7			; host notifications can be sent anytime
+        service_notification_options    w,u,c,r,f,s		; send notifications for all service states, flapping events, and scheduled downtime events
+        host_notification_options       d,u,r,f,s		; send notifications for all host states, flapping events, and scheduled downtime events
+        service_notification_commands   notify-service-by-email	; send service notifications via email
+        host_notification_commands      notify-host-by-email	; send host notifications via email
+        register                        0       		; DONT REGISTER THIS DEFINITION - ITS NOT A REAL CONTACT, JUST A TEMPLATE!
+        }
+
+
+
+
+###############################################################################
+###############################################################################
+#
+# HOST TEMPLATES
+#
+##############################################################################
+#
+###############################################################################
+
+# Generic host definition template - This is NOT a real host, just a template!
+
+define host{
+        name                            generic-host    ; The name of this host template
+        notifications_enabled           1       	; Host notifications are enabled
+        event_handler_enabled           1       	; Host event handler is enabled
+        flap_detection_enabled          1       	; Flap detection is enabled
+        process_perf_data               1       	; Process performance data
+        retain_status_information       1       	; Retain status information across program restarts
+        retain_nonstatus_information    1       	; Retain non-status information across program restarts
+	notification_period		24x7		; Send host notifications at any time
+        register                        0       	; DONT REGISTER THIS DEFINITION - ITS NOT A REAL HOST, JUST A TEMPLATE!
+        }
+
+
+# Linux host definition template - This is NOT a real host, just a template!
+
+define host{
+	name				linux-server	; The name of this host template
+	use				generic-host	; This template inherits other values from the generic-host template
+	check_period			24x7		; By default, Linux hosts are checked round the clock
+	check_interval			2		; Actively check the host every 5 minutes
+	retry_interval			1		; Schedule host check retries at 1 minute intervals
+	max_check_attempts		10		; Check each Linux host 10 times (max)
+        check_command           	check-host-alive ; Default command to check Linux hosts
+	notification_period		24x7		; Linux admins hate to be woken up, so we only notify during the day
+							; Note that the notification_period variable is being overridden from
+							; the value that is inherited from the generic-host template!
+	notification_interval		120		; Resend notifications every 2 hours
+	notification_options		d,u,r		; Only send notifications for specific host states
+	contact_groups			admins		; Notifications get sent to the admins by default
+	register			0		; DONT REGISTER THIS DEFINITION - ITS NOT A REAL HOST, JUST A TEMPLATE!
+	}
+
+define host{
+        name                            linux-server-without-ping    ; The name of this host template
+        use                             generic-host    ; This template inherits other values from the generic-host template
+        check_period                    24x7            ; By default, Linux hosts are checked round the clock
+        check_interval                  2               ; Actively check the host every 5 minutes
+        retry_interval                  1               ; Schedule host check retries at 1 minute intervals
+        max_check_attempts              10              ; Check each Linux host 10 times (max)
+        notification_period             24x7       ; Linux admins hate to be woken up, so we only notify during the day
+                                                        ; Note that the notification_period variable is being overridden from
+                                                        ; the value that is inherited from the generic-host template!
+        notification_interval           120             ; Resend notifications every 2 hours
+        notification_options            d,u,r           ; Only send notifications for specific host states
+        contact_groups                  admins          ; Notifications get sent to the admins by default
+        register                        0               ; DONT REGISTER THIS DEFINITION - ITS NOT A REAL HOST, JUST A TEMPLATE!
+        }
+
+# Windows host definition template - This is NOT a real host, just a template!
+
+define host{
+	name			windows-server	; The name of this host template
+	use			generic-host	; Inherit default values from the generic-host template
+	check_period		24x7		; By default, Windows servers are monitored round the clock
+	check_interval		2		; Actively check the server every 5 minutes
+	retry_interval		1		; Schedule host check retries at 1 minute intervals
+	max_check_attempts	10		; Check each server 10 times (max)
+	notification_period	24x7		; Send notification out at any time - day or night
+	notification_interval	120		; Resend notifications every 30 minutes
+	notification_options	d,u,r		; Only send notifications for specific host states
+	contact_groups		admins		; Notifications get sent to the admins by default
+	register		0		; DONT REGISTER THIS - ITS JUST A TEMPLATE
+	}
+
+
+# We define a generic printer template that can be used for most printers we monitor
+
+define host{
+	name			generic-printer	; The name of this host template
+	use			generic-host	; Inherit default values from the generic-host template
+	check_period		24x7		; By default, printers are monitored round the clock
+	check_interval		5		; Actively check the printer every 5 minutes
+	retry_interval		1		; Schedule host check retries at 1 minute intervals
+	max_check_attempts	10		; Check each printer 10 times (max)
+	check_command		check-host-alive	; Default command to check if printers are "alive"
+	notification_period	workhours		; Printers are only used during the workday
+	notification_interval	30		; Resend notifications every 30 minutes
+	notification_options	d,r		; Only send notifications for specific host states
+	contact_groups		admins		; Notifications get sent to the admins by default
+	register		0		; DONT REGISTER THIS - ITS JUST A TEMPLATE
+	}
+
+
+# Define a template for switches that we can reuse
+define host{
+	name			generic-switch	; The name of this host template
+	use			generic-host	; Inherit default values from the generic-host template
+	check_period		24x7		; By default, switches are monitored round the clock
+	check_interval		5		; Switches are checked every 5 minutes
+	retry_interval		1		; Schedule host check retries at 1 minute intervals
+	max_check_attempts	10		; Check each switch 10 times (max)
+	check_command		check-host-alive	; Default command to check if routers are "alive"
+	notification_period	24x7		; Send notifications at any time
+	notification_interval	30		; Resend notifications every 30 minutes
+	notification_options	d,r		; Only send notifications for specific host states
+	contact_groups		admins		; Notifications get sent to the admins by default
+	register		0		; DONT REGISTER THIS - ITS JUST A TEMPLATE
+	}
+
+
+
+
+###############################################################################
+###############################################################################
+#
+# SERVICE TEMPLATES
+#
+###############################################################################
+###############################################################################
+
+define servicegroup{
+	servicegroup_name	web-services
+	alias			Services Web
+        members                 {% for host in groups['odoo_server'] %}{% if loop.index == loop.length %}{{ host }},Odoo {{ hostvars[host].odoo_url }}{% else %}{{ host }},Odoo {{ hostvars[host].odoo_url }},{% endif %}{% endfor %},{% for host in groups['owncloud_server'] %}{% if loop.index == loop.length %}{{ host }},OwnCloud {{ hostvars[host].cloud_url }}{% else %}{{ host }},OwnCloud {{ hostvars[host].cloud_url }},{% endif %}{% endfor %},{% for host in groups['docker_odoo'] %}{% if loop.index == loop.length %}{{ host }},Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Odoo Test Server {{ hostvars[host].odoo_test_url }}{% else %}{{ host }},Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Odoo Test Server {{ hostvars[host].odoo_test_url }},{% endif %}{% endfor %},{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) %}{% if loop.index == loop.length %}{{ host }},Cloud Server {{ hostvars[host].cloud_url }}{% if hostvars[host].cloud_onlyoffice is defined %},{{ host }},OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}{% endif %}{% else %}{{ host }},Cloud Server {{ hostvars[host].cloud_url }},{% if hostvars[host].cloud_onlyoffice is defined %}{{ host }},OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }},{% endif %}{% endif %}{% endfor %},{% for host in groups['docker_auth'] %}{% if loop.index == loop.length %}{{ host }},PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},SSO Server {{ hostvars[host].sso_url }}{% else %}{{ host }},PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},SSO Server {{ hostvars[host].sso_url }},{% endif %}{% endfor %}
+
+	}
+
+define servicegroup{
+	servicegroup_name	certificates
+	alias			Certificats
+        members                 {% for host in groups['odoo_server'] %}{% if loop.index == loop.length %}{{ host }},Certificate Odoo {{ hostvars[host].odoo_url }}{% else %}{{ host }},Certificate Odoo {{ hostvars[host].odoo_url }},{% endif %}{% endfor %},{% for host in groups['owncloud_server'] %}{% if loop.index == loop.length %}{{ host }},Certificate OwnCloud {{ hostvars[host].cloud_url }}{% else %}{{ host }},Certificate OwnCloud {{ hostvars[host].cloud_url }},{% endif %}{% endfor %},{% for host in groups['docker_odoo'] %}{% if loop.index == loop.length %}{{ host }},Certificate Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }}{% else %}{{ host }},Certificate Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }},{% endif %}{% endfor %},{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) %}{% if loop.index == loop.length %}{{ host }},Certificate Cloud Server {{ hostvars[host].cloud_url }}{% if hostvars[host].cloud_onlyoffice is defined %},{{ host }},Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}{% endif %}{% else %}{{ host }},Certificate Cloud Server {{ hostvars[host].cloud_url }},{% if hostvars[host].cloud_onlyoffice is defined %}{{ host }},Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }},{% endif %}{% endif %}{% endfor %},{% for host in groups['docker_auth'] %}{% if loop.index == loop.length %}{{ host }},Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},Certificate SSO Server {{ hostvars[host].sso_url }}{% else %}{{ host }},Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},Certificate SSO Server {{ hostvars[host].sso_url }},{% endif %}{% endfor %}
+
+	}
+
+define servicegroup{
+        servicegroup_name       disk-utilisation
+        alias                   Utilisation du disque
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Espace Disque,') }},Espace Disque
+        }
+
+define servicegroup{
+        servicegroup_name       cpu-utilisation
+        alias                   Utilisation CPU
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Charge CPU,') }},Charge CPU
+        }
+
+define servicegroup{
+        servicegroup_name       services
+        alias                   Services
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',SSHD Service,') }},SSHD Service,{{ groups['all'] | difference(groups['docker']) | map('extract', hostvars, ['inventory_hostname']) | join(',Nginx Service,') }},Nginx Service,{{ groups['odoo_server'] | map('extract', hostvars, ['inventory_hostname']) | join(',Odoo Service,') }},Odoo Service,{{ groups['owncloud_server'] | map('extract', hostvars, ['inventory_hostname']) | join(',Owncloud Service,') }},Owncloud Service,{{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Services en cours,') }},Services en cours
+        }
+
+define servicegroup{
+        servicegroup_name       ping-ssh
+        alias                   Ping - SSH
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',PING,') }},PING,{{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',SSH,') }},SSH,Nagios Server,PING
+        }
+
+define servicegroup{
+        servicegroup_name       connected-users
+        alias                   Utilisateurs Connectes
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Utilisateurs Connectes,') }},Utilisateurs Connectes
+        }
+
+define servicegroup{
+        servicegroup_name       docker_proxy
+        alias                   Proxy Dockers
+        members                 {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker Proxy,') }},Docker Proxy
+        }
+
+define servicegroup{
+        servicegroup_name       docker_auth
+        alias                   Auth Dockers
+        members                 {{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker LDAP,') }},Docker LDAP,{{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker SSO,') }},Docker SSO
+        }
+
+define servicegroup{
+        servicegroup_name       docker_odoo
+        alias                   Odoo Dockers
+        members                 {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker Odoo,') }},Docker Odoo,{{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker Odoo Test,') }},Docker Odoo Test,{{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker Odoo Whitelists,') }},Docker Odoo Whitelists
+        }
+
+define servicegroup{
+        servicegroup_name       docker_cloud
+        alias                   Cloud Dockers
+        members                 {{ groups['docker_owncloud'] | union(groups['docker_nextcloud']) | map('extract', hostvars, ['inventory_hostname']) | join(',Docker Cloud,') }},Docker Cloud
+        }
+
+# Generic service definition template - This is NOT a real service, just a template!
+
+define service{
+        name                            generic-service 	; The 'name' of this service template
+        active_checks_enabled           1       		; Active service checks are enabled
+        passive_checks_enabled          1    		   	; Passive service checks are enabled/accepted
+        parallelize_check               1       		; Active service checks should be parallelized (disabling this can lead to major performance problems)
+        obsess_over_service             1       		; We should obsess over this service (if necessary)
+        check_freshness                 0       		; Default is to NOT check service 'freshness'
+        notifications_enabled           1       		; Service notifications are enabled
+        event_handler_enabled           1       		; Service event handler is enabled
+        flap_detection_enabled          1       		; Flap detection is enabled
+        process_perf_data               1       		; Process performance data
+        retain_status_information       1       		; Retain status information across program restarts
+        retain_nonstatus_information    1       		; Retain non-status information across program restarts
+        is_volatile                     0       		; The service is not volatile
+        check_period                    24x7			; The service can be checked at any time of the day
+        max_check_attempts              3			; Re-check the service up to 3 times in order to determine its final (hard) state
+        check_interval           	10			; Check the service every 10 minutes under normal conditions
+        retry_interval            	2			; Re-check the service every two minutes until a hard state can be determined
+        contact_groups                  admins			; Notifications get sent out to everyone in the 'admins' group
+	notification_options		w,u,c,r			; Send notifications about warning, unknown, critical, and recovery events
+        notification_interval           120			; Re-notify about service problems every two hours
+	notification_period             24x7			; Notifications can be sent out at any time
+        register                        0       		; DONT REGISTER THIS DEFINITION - ITS NOT A REAL SERVICE, JUST A TEMPLATE!
+        }
+
+
+# Daily service definition template - This is NOT a real service, just a template!
+
+define service{
+        name                            daily-service
+        use                             generic-service         
+	servicegroups			certificates
+        max_check_attempts              2
+        check_interval           	1440
+        retry_interval            	5
+	notification_interval		1440
+        register                        0
+        }
+
+# Graph service definition template - This is NOT a real service, just a template!
+
+define service {
+        name                            graphed-service
+        action_url                      /cgi-bin/show.cgi?host=$HOSTNAME$&service=$SERVICEDESC$' onMouseOver='showGraphPopup(this)' onMouseOut='hideGraphPopup()' rel='/cgi-bin/showgraph.cgi?host=$HOSTNAME$&service=$SERVICEDESC$&period=day&rrdopts=-w+450+-j
+        register                        0
+	}

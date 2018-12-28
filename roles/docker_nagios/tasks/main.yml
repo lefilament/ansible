@@ -1,0 +1,101 @@
+---
+
+## Install Nagios docker
+- name: create Nagios docker structure on server in /home/docker/odoo
+  file:
+    name: "{{ item }}"
+    state: directory
+    owner: 999
+    group: 1000
+  with_items:
+  - /home/docker/nagios/custom
+  - /home/docker/nagios/etc/objects
+  - /home/docker/nagios/stylesheets
+
+- name: Install nagios docker
+  template:
+    src: nagios.yaml.j2
+    dest: /home/docker/nagios/docker-compose.yaml
+    owner: root
+    group: root
+    mode: 0644 
+  notify: restart nagios docker
+
+- name: get ssl certificate verification module from github
+  get_url:
+    url: https://raw.githubusercontent.com/matteocorti/check_ssl_cert/v1.56.0/check_ssl_cert
+    dest: /home/docker/nagios/custom/check_ssl_cert
+    mode: 0555
+  notify: restart nagios docker
+  tags: nagios_config
+
+- name: copy configuration files
+  copy:
+    src: "{{ item }}"
+    dest: /home/docker/nagios/etc/{{ item }}
+    mode: 0644
+    owner: 999
+    group: 1000
+  with_items:
+    - cgi.cfg
+    - nagios.cfg
+    - resource.cfg
+  notify: restart nagios docker
+  tags: nagios_config
+
+- name: copy CSS files
+  copy:
+    src: "roles/nagios/files/{{ item }}"
+    dest: /home/docker/nagios/stylesheets/{{ item }}
+    mode: 0644
+    owner: 999
+    group: 1000
+  with_items:
+    - avail.css
+    - checksanity.css
+    - cmd.css
+    - common.css
+    - config.css
+    - extinfo.css
+    - histogram.css
+    - histogramgraph.css
+    - history.css
+    - jsonquery.css
+    - map.css
+    - map-directive.css
+    - ministatus.css
+    - nag_funcs.css
+    - notifications.css
+    - outages.css
+    - showlog.css
+    - status.css
+    - statusmap.css
+    - summary.css
+    - tac.css
+    - trends.css
+    - trendsgraph.css
+  notify: restart nagios docker
+  tags: nagios_config
+
+- name: install objects configuration files
+  template:
+    src: "{{ item }}.j2"
+    dest: /home/docker/nagios/etc/objects/{{ item }}
+    mode: 0644
+    owner: 999
+    group: 1000
+  with_items:
+    - vps.cfg
+    - localhost.cfg
+    - templates.cfg
+    - contacts.cfg
+    - commands.cfg
+    - timeperiods.cfg
+  notify: restart nagios docker
+  tags: nagios_config
+
+- name: start nagios docker
+  docker_service:
+    project_src: /home/docker/nagios/
+  tags: start_docker
+

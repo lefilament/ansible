@@ -1,0 +1,3 @@
+# Nagios URL
+nagios_url: "{{ SERVER_nagios_url }}"
+

@@ -1,0 +1,36 @@
+---
+
+odoo_db_version: 10
+odoo_version: 10.0
+
+# Custom modules
+odoo_custom_modules:
+  - lefilament_projets
+
+odoo_custom_modules_oca:
+  - repo: account-financial-reporting
+    modules:
+     - account_tax_balance
+  - repo: bank-statement-import
+    modules:
+     - account_bank_statement_import_ofx
+     - account_bank_statement_import_qif
+  - repo: knowledge
+    modules:
+     - document_page
+     - knowledge
+  - repo: partner-contact
+    modules:
+     - partner_firstname
+  - repo: server-tools
+    modules:
+     - date_range
+     - auth_session_timeout
+     - auth_brute_force
+     - password_security
+  - repo: social
+    modules:
+     - mail_restrict_follower_selection
+  - repo: web
+    modules:
+     - web_export_view

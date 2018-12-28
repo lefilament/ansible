@@ -1,7 +1,11 @@
 ---
 
 - name: restore-iptables
-  shell: iptables-restore < /etc/iptables.conf
+  service: name=netfilter-persistent state=restarted
 
 - name: restart fail2ban
   service: name=fail2ban state=restarted
+
+- name: restart docker
+  service: name=docker state=restarted
+  when: inventory_hostname in groups.docker

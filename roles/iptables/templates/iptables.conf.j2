@@ -11,6 +11,9 @@
 -A INPUT -i lo -j ACCEPT
 # ICMP (Ping)
 -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+{% if inventory_hostname in groups.docker_nagios %}
+-A INPUT -p icmp --icmp-type echo-reply -j ACCEPT
+{% endif %}
 # SSH
 -A INPUT -p tcp -m tcp --dport {{ ansible_ssh_port }} -j ACCEPT
 # WEB 
@@ -18,11 +21,23 @@
 -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
 -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
 {% endif %}
+{% if inventory_hostname in groups.docker_nagios %}
+-A INPUT -s 172.23.0.0/24 -p tcp -m tcp --dport 443 -m state --state NEW,ESTABLISHED -j ACCEPT
+{% endif %}
 # DNS
 -A INPUT -p tcp -m tcp --dport 53 -j ACCEPT
 -A INPUT -p udp -m udp --dport 53 -j ACCEPT
 # DHCP
 -A INPUT -p udp -m udp --dport 68 -j ACCEPT
+# NRPE
+{% if inventory_hostname not in groups.docker_nagios %}
+{% for host in groups.docker_nagios %}
+-A INPUT -s {{ hostvars[host].ansible_ssh_host }} -p tcp -m tcp --dport 5666 -m state --state NEW,ESTABLISHED -j ACCEPT
+{% endfor %}
+{% endif %}
+{% if inventory_hostname in groups.docker_nagios %}
+-A INPUT -s 172.23.0.0/24 -p tcp -m tcp --dport 5666 -m state --state NEW,ESTABLISHED -j ACCEPT
+{% endif %}
 # Log incoming traffic blocked by IPTables
 -A INPUT -j LOGGING
 ## OUTPUT chain
@@ -32,6 +47,9 @@
 -A OUTPUT -o lo -j ACCEPT
 # ICMP (Ping)
 -A OUTPUT -p icmp --icmp-type echo-reply -j ACCEPT
+{% if inventory_hostname in groups.docker_nagios %}
+-A OUTPUT -p icmp --icmp-type echo-request -j ACCEPT
+{% endif %}
 # SSH
 -A OUTPUT -p tcp -m tcp --dport {{ ansible_ssh_port }} -j ACCEPT
 # WEB 
@@ -45,13 +63,20 @@
 # SMTP Postfix
 -A OUTPUT -p tcp -m tcp --dport 25 -j ACCEPT
 -A OUTPUT -p tcp -m tcp --dport 465 -j ACCEPT
+-A OUTPUT -p tcp -m tcp --dport 587 -j ACCEPT
 # WhoIs
 -A OUTPUT -p tcp -m tcp --dport 43 -j ACCEPT
 # DHCP
 -A OUTPUT -p udp -m udp --dport 67 -j ACCEPT
+# GPG
+-A OUTPUT -p udp -m udp --dport 11371 -j ACCEPT
 {% if inventory_hostname in groups['odoo_server'] %}
 # IMAP
 -A OUTPUT -p tcp -m tcp --dport 993 -j ACCEPT
+{% endif %}
+{% if inventory_hostname in groups.docker_nagios %}
+# NRPE
+-A OUTPUT -p tcp -m tcp --dport 5666 -j ACCEPT
 {% endif %}
 # Log outgoing traffic blocked by IPTables
 -A OUTPUT -j LOGGING

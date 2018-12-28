@@ -1,8 +1,7 @@
 ---
 
 - name: restart-odoo
-  service: name="{{ OE_CONFIG }}" state=restarted
-  when: inventory_hostname not in groups.odoo_legacy
+  service: name="{{ odoo_config_name }}" state=restarted
 
 - name: restart nginx
   service: name=nginx state=restarted 

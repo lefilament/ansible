@@ -1,0 +1,21 @@
+#!/bin/bash
+
+export PGDATABASE=owncloud
+export PGHOST=localhost
+export PGPASSWORD={{ cloud_pg_pass }}
+export PGUSER={{ cloud_pg_user }}
+
+pg_dump --no-owner --no-privileges --file "/root/backup-$PGDATABASE.sql"
+
+export SWIFT_USERNAME={{ swift_username }}
+export SWIFT_PASSWORD={{ swift_password }}
+export SWIFT_AUTHURL={{ swift_authurl }}
+export SWIFT_AUTHVERSION={{ swift_authversion }}
+export SWIFT_TENANTNAME={{ swift_tenantname }}
+export SWIFT_TENANTID={{ swift_tenantid }}
+export SWIFT_REGIONNAME={{ swift_regionname }}
+
+export PASSPHRASE="{{ cloud_backup_pass }}"
+
+duplicity full --include /var/www/owncloud/data --include /var/www/owncloud/config --include /root/backup-$PGDATABASE.sql --exclude '**' / swift://nextcloud_sapoval
+duplicity remove-all-but-n-full 4 --force swift://nextcloud_sapoval
