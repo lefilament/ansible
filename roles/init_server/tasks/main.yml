@@ -21,7 +21,7 @@
     name: unattended-upgrades
     autoremove: yes
     state: absent
-  when: ansible_os_family == "Debian"
+  when: ansible_distribution == "Ubuntu"
 
 - name: Remove unecessary samba hooks
   file:
