@@ -1,7 +1,7 @@
 ---
 
 ## Install Nagios docker
-- name: create Nagios docker structure on server in /home/docker/odoo
+- name: create Nagios docker structure on server in /home/docker/nagios
   file:
     name: "{{ item }}"
     state: directory
@@ -16,8 +16,6 @@
   template:
     src: nagios.yaml.j2
     dest: /home/docker/nagios/docker-compose.yaml
-    owner: root
-    group: root
     mode: 0644 
   notify: restart nagios docker
 
@@ -93,6 +91,20 @@
     - timeperiods.cfg
   notify: restart nagios docker
   tags: nagios_config
+
+- name: create apache2 dir on server in /home/docker/nagios
+  file:
+    name: /home/docker/nagios/apache2
+    state: directory
+
+- name: install apache2 configuration files
+  copy:
+    src: "{{ item }}"
+    dest: /home/docker/nagios/apache2/{{ item }}
+    mode: 0644
+  with_items:
+    - 000-default.conf
+    - nagios.conf
 
 - name: start nagios docker
   docker_service:

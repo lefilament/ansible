@@ -9,17 +9,12 @@ services:
       - ./custom:/opt/nagios/libexec/custom
       - ./etc:/opt/nagios/etc/
       - ./stylesheets:/opt/nagios/share/stylesheets/
+      - ./apache2/:/etc/apache2/sites-enabled/
     networks:
-      default:
-      inverseproxy_shared:
-    labels:
-      traefik.docker.network: "inverseproxy_shared"
-      traefik.enable: "true"
-      traefik.frontend.passHostHeader: "true"
-      traefik.port: "80"
-      traefik.own.frontend.rule: "Host:{{ nagios_url }}"
+      auth_default:
+      public:
 
 networks:
-    default:
-    inverseproxy_shared:
+    auth_default:
         external: true
+    public:
