@@ -58,32 +58,20 @@ services:
       traefik.own.frontend.rule: "Host:{{ ldap_url }}"
 
   sso:
-    image: tiredofit/lemonldap:1.9-debian
+    build: sso
+    image: filament/lemonldap:1.9-debian
     container_name: sso
     restart: always
     volumes:
-    - lemonldap_etc:/etc/lemonldap-ng
     - lemonldap_conf:/var/lib/lemonldap-ng/conf
     - lemonldap_sessions:/var/lib/lemonldap-ng/sessions
     - lemonldap_psessions:/var/lib/lemonldap-ng/psessions
-    - lemonldap_logs:/www/logs
-    environment:
-    - ZABBIX_HOSTNAME=lemonldap-app
-    - DOMAIN_NAME={{ ldap_domain }}
-    - MANAGER_HOSTNAME=manager.{{ sso_url }}
-    - PORTAL_HOSTNAME={{ sso_url }}
-    - HANDLER_HOSTNAME=handler.{{ sso_url }}
-    - MODE=MASTER
-    - CONFIG_TYPE=FILE
-    - SESSION_TYPE=FILE
-    - HANDLER_CACHE_TYPE=FILE
     labels:
       traefik.docker.network: "inverseproxy_shared"
       traefik.enable: "true"
       traefik.frontend.passHostHeader: "true"
       traefik.port: "80"
-      traefik.own.frontend.rule: "Host:manager.{{ sso_url }}, {{ sso_url }}, handler.{{ sso_url }}"
-      traefik.frontend.headers.isDevelopment: "true"
+      traefik.own.frontend.rule: "Host:manager.{{ sso_url }}, {{ sso_url }}, handler.{{ sso_url }}{% if inventory_hostname in groups['docker_nagios'] %}, {{ nagios_url }}{% endif %}"
     networks:
       default:
       inverseproxy_shared:
@@ -99,8 +87,6 @@ networks:
 volumes:
     db:
     config:
-    lemonldap_etc:
     lemonldap_conf:
     lemonldap_sessions:
     lemonldap_psessions:
-    lemonldap_logs:
