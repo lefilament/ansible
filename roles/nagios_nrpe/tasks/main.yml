@@ -59,7 +59,7 @@
     src: https://github.com/NagiosEnterprises/nrpe/releases/download/nrpe-3.2.1/nrpe-3.2.1.tar.gz
     remote_src: yes
     dest: /root/
-    creates: /root/nrpre-3.2.1
+    creates: /root/nrpe-3.2.1
   register: nrpe_downloaded
 
 - name: Initial configuration Nagios NRPE
