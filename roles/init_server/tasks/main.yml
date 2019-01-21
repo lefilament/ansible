@@ -47,6 +47,31 @@
     password: "{{ host_password | password_hash('sha512') }}"
     generate_ssh_key: yes
     shell: /bin/bash
+  register: publickey
+
+- name: Save public key to hostvars
+  local_action:
+    module: lineinfile
+    name: "host_vars/{{ inventory_hostname }}"
+    regexp: "host_user_public_key:"
+    line: "host_user_public_key: {{ publickey.ssh_public_key }}"
+  connection: local
+  become: no
+  when: inventory_hostname in groups.maintenance_sftp
+
+- name: Create SFTP group
+  group:
+    name: sftpgroup
+  when: inventory_hostname in groups.backup_server
+
+- name: Create SFTP users
+  user:
+    name: "{{ hostvars[item].backup_sftp_user }}"
+    group: sftpgroup
+    password: "!"
+    shell: /sbin/nologin
+  with_items: "{{ groups.maintenance_sftp }}"
+  when: inventory_hostname in groups.backup_server
 
 - name: add user in sudoers
   lineinfile:
@@ -59,6 +84,15 @@
     key: "{{ depl_ssh_pubkey }}"
     user: "{{ host_user }}"
     exclusive: yes
+  tags: sshd
+
+- name: add SFTP users public key to authorized keys
+  authorized_key:
+    key: "{{ hostvars[item].host_user_public_key }}"
+    user: "{{ hostvars[item].backup_sftp_user }}"
+    exclusive: yes
+  with_items: "{{ groups.maintenance_sftp }}"
+  when: inventory_hostname in groups.backup_server
   tags: sshd
 
 - name: Disable access with dsa key
@@ -114,6 +148,24 @@
     name: /etc/ssh/sshd_config
     regexp: "^AllowUsers"
     line: "AllowUsers {{ host_user }}"
+  when: inventory_hostname not in groups.backup_server
+  notify: restart-sshd
+  tags: sshd
+
+- name: Enable ssh connection for {{ host_user }} and SFTP users on Backup server
+  blockinfile:
+    path: /etc/ssh/sshd_config
+    block: |
+      AllowUsers {{ host_user }} {{ groups.maintenance_sftp | map('extract', hostvars, ['backup_sftp_user']) | sort | join("  ") }}
+      AllowGroups {{ host_user }} sftpgroup
+
+      Match Group sftpgroup
+              ChrootDirectory /mnt/vdb/backup/sftp
+              ForceCommand internal-sftp
+              AllowTcpForwarding no
+              GatewayPorts no
+              X11Forwarding no
+  when: inventory_hostname in groups.backup_server
   notify: restart-sshd
   tags: sshd
 
@@ -124,3 +176,13 @@
       TMOUT=900
       readonly TMOUT
       export TMOUT
+  when: ansible_os_family == "Debian"
+
+- name: Add session timeout
+  blockinfile:
+    path: /etc/bashrc
+    block: |
+      TMOUT=900
+      readonly TMOUT
+      export TMOUT
+  when: ansible_os_family == "RedHat"

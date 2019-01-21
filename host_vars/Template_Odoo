@@ -80,3 +80,6 @@ bank_account: "{{ SERVER_bank_account }}"
 # Bank account 2
 bank_account2: "{{ SERVER_bank_account2 }}"
 
+
+# SFTP user to connect to backup server - host needs to be in maintenance_sftp group in inventory
+backup_sftp_user: "{{ SERVER_backup_sftp_user }}"

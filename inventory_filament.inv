@@ -7,6 +7,9 @@ NewHost2
 [vps_server]
 NewHost3
 
+[maintenance_sftp]
+NewHost2
+
 [docker]
 NewHost2
 NewHost3
