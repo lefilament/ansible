@@ -162,69 +162,69 @@ define host{
 define servicegroup{
 	servicegroup_name	web-services
 	alias			Services Web
-        members                 {% for host in groups['odoo_server'] %}{% if loop.index == loop.length %}{{ host }},Odoo {{ hostvars[host].odoo_url }}{% else %}{{ host }},Odoo {{ hostvars[host].odoo_url }},{% endif %}{% endfor %},{% for host in groups['owncloud_server'] %}{% if loop.index == loop.length %}{{ host }},OwnCloud {{ hostvars[host].cloud_url }}{% else %}{{ host }},OwnCloud {{ hostvars[host].cloud_url }},{% endif %}{% endfor %},{% for host in groups['docker_odoo'] %}{% if loop.index == loop.length %}{{ host }},Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Odoo Test Server {{ hostvars[host].odoo_test_url }}{% else %}{{ host }},Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Odoo Test Server {{ hostvars[host].odoo_test_url }},{% endif %}{% endfor %},{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) %}{% if loop.index == loop.length %}{{ host }},Cloud Server {{ hostvars[host].cloud_url }}{% if hostvars[host].cloud_onlyoffice is defined %},{{ host }},OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}{% endif %}{% else %}{{ host }},Cloud Server {{ hostvars[host].cloud_url }},{% if hostvars[host].cloud_onlyoffice is defined %}{{ host }},OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }},{% endif %}{% endif %}{% endfor %},{% for host in groups['docker_auth'] %}{% if loop.index == loop.length %}{{ host }},PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},SSO Server {{ hostvars[host].sso_url }}{% else %}{{ host }},PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},SSO Server {{ hostvars[host].sso_url }},{% endif %}{% endfor %}
+        members                 {% for host in groups['odoo_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Odoo {{ hostvars[host].odoo_url }}{% else %}{{ host }},Odoo {{ hostvars[host].odoo_url }},{% endif %}{% endfor %},{% for host in groups['owncloud_server'] | sort %}{% if loop.index == loop.length %}{{ host }},OwnCloud {{ hostvars[host].cloud_url }}{% else %}{{ host }},OwnCloud {{ hostvars[host].cloud_url }},{% endif %}{% endfor %},{% for host in groups['bluemind_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Webmail {{ hostvars[host].mail_url }}{% else %}{{ host }},Webmail {{ hostvars[host].mail_url }},{% endif %}{% endfor %},{% for host in groups['docker_odoo'] | sort %}{% if loop.index == loop.length %}{{ host }},Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Odoo Test Server {{ hostvars[host].odoo_test_url }}{% else %}{{ host }},Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Odoo Test Server {{ hostvars[host].odoo_test_url }},{% endif %}{% endfor %},{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) | sort %}{% if loop.index == loop.length %}{{ host }},Cloud Server {{ hostvars[host].cloud_url }}{% if hostvars[host].cloud_onlyoffice is defined %},{{ host }},OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}{% endif %}{% else %}{{ host }},Cloud Server {{ hostvars[host].cloud_url }},{% if hostvars[host].cloud_onlyoffice is defined %}{{ host }},OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }},{% endif %}{% endif %}{% endfor %},{% for host in groups['docker_auth'] | sort %}{% if loop.index == loop.length %}{{ host }},PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},SSO Server {{ hostvars[host].sso_url }}{% else %}{{ host }},PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},SSO Server {{ hostvars[host].sso_url }},{% endif %}{% endfor %}
 
 	}
 
 define servicegroup{
 	servicegroup_name	certificates
 	alias			Certificats
-        members                 {% for host in groups['odoo_server'] %}{% if loop.index == loop.length %}{{ host }},Certificate Odoo {{ hostvars[host].odoo_url }}{% else %}{{ host }},Certificate Odoo {{ hostvars[host].odoo_url }},{% endif %}{% endfor %},{% for host in groups['owncloud_server'] %}{% if loop.index == loop.length %}{{ host }},Certificate OwnCloud {{ hostvars[host].cloud_url }}{% else %}{{ host }},Certificate OwnCloud {{ hostvars[host].cloud_url }},{% endif %}{% endfor %},{% for host in groups['docker_odoo'] %}{% if loop.index == loop.length %}{{ host }},Certificate Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }}{% else %}{{ host }},Certificate Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }},{% endif %}{% endfor %},{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) %}{% if loop.index == loop.length %}{{ host }},Certificate Cloud Server {{ hostvars[host].cloud_url }}{% if hostvars[host].cloud_onlyoffice is defined %},{{ host }},Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}{% endif %}{% else %}{{ host }},Certificate Cloud Server {{ hostvars[host].cloud_url }},{% if hostvars[host].cloud_onlyoffice is defined %}{{ host }},Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }},{% endif %}{% endif %}{% endfor %},{% for host in groups['docker_auth'] %}{% if loop.index == loop.length %}{{ host }},Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},Certificate SSO Server {{ hostvars[host].sso_url }}{% else %}{{ host }},Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},Certificate SSO Server {{ hostvars[host].sso_url }},{% endif %}{% endfor %}
+        members                 {% for host in groups['odoo_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Odoo {{ hostvars[host].odoo_url }}{% else %}{{ host }},Certificate Odoo {{ hostvars[host].odoo_url }},{% endif %}{% endfor %},{% for host in groups['owncloud_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate OwnCloud {{ hostvars[host].cloud_url }}{% else %}{{ host }},Certificate OwnCloud {{ hostvars[host].cloud_url }},{% endif %}{% endfor %},{% for host in groups['bluemind_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Webmail {{ hostvars[host].mail_url }}{% else %}{{ host }},Certificate Webmail {{ hostvars[host].mail_url }},{% endif %}{% endfor %},{% for host in groups['docker_odoo'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }}{% else %}{{ host }},Certificate Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }},{% endif %}{% endfor %},{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Cloud Server {{ hostvars[host].cloud_url }}{% if hostvars[host].cloud_onlyoffice is defined %},{{ host }},Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}{% endif %}{% else %}{{ host }},Certificate Cloud Server {{ hostvars[host].cloud_url }},{% if hostvars[host].cloud_onlyoffice is defined %}{{ host }},Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }},{% endif %}{% endif %}{% endfor %},{% for host in groups['docker_auth'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},Certificate SSO Server {{ hostvars[host].sso_url }}{% else %}{{ host }},Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},Certificate SSO Server {{ hostvars[host].sso_url }},{% endif %}{% endfor %}
 
 	}
 
 define servicegroup{
         servicegroup_name       disk-utilisation
         alias                   Utilisation du disque
-        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Espace Disque,') }},Espace Disque
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Espace Disque,') }},Espace Disque,{{ groups['extradisk_vps'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Disque Additionnel,') }},Disque Additionnel,TAS-Windows,Espace Disque C:,TAS-Windows,Espace Disque T:,TAS-Windows,Espace Disque U:
         }
 
 define servicegroup{
         servicegroup_name       cpu-utilisation
         alias                   Utilisation CPU
-        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Charge CPU,') }},Charge CPU
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Charge CPU,') }},Charge CPU,TAS-Windows,Charge CPU
         }
 
 define servicegroup{
         servicegroup_name       services
         alias                   Services
-        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',SSHD Service,') }},SSHD Service,{{ groups['all'] | difference(groups['docker']) | map('extract', hostvars, ['inventory_hostname']) | join(',Nginx Service,') }},Nginx Service,{{ groups['odoo_server'] | map('extract', hostvars, ['inventory_hostname']) | join(',Odoo Service,') }},Odoo Service,{{ groups['owncloud_server'] | map('extract', hostvars, ['inventory_hostname']) | join(',Owncloud Service,') }},Owncloud Service,{{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Services en cours,') }},Services en cours
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',SSHD Service,') }},SSHD Service,{{ groups['all'] | difference(groups['backup_server']) | difference(groups['docker']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Nginx Service,') }},Nginx Service,{{ groups['odoo_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Odoo Service,') }},Odoo Service,{{ groups['owncloud_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Owncloud Service,') }},Owncloud Service,{{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Services en cours,') }},Services en cours,TAS-Windows,NetDrive2,TAS-Windows,NsClient++,TAS-Windows,RDP,TAS-Windows,Services en cours,TAS-Windows,Sophos,Nagios Server,Nagios Service
         }
 
 define servicegroup{
         servicegroup_name       ping-ssh
         alias                   Ping - SSH
-        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',PING,') }},PING,{{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',SSH,') }},SSH,Nagios Server,PING
+        members                 {{ groups['all'] | difference(groups['physical_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',PING,') }},PING,{{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',SSH,') }},SSH,Nagios Server,PING
         }
 
 define servicegroup{
         servicegroup_name       connected-users
         alias                   Utilisateurs Connectes
-        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Utilisateurs Connectes,') }},Utilisateurs Connectes
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Utilisateurs Connectes,') }},Utilisateurs Connectes
         }
 
 define servicegroup{
         servicegroup_name       docker_proxy
         alias                   Proxy Dockers
-        members                 {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker Proxy,') }},Docker Proxy
+        members                 {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Proxy,') }},Docker Proxy
         }
 
 define servicegroup{
         servicegroup_name       docker_auth
         alias                   Auth Dockers
-        members                 {{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker LDAP,') }},Docker LDAP,{{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker SSO,') }},Docker SSO
+        members                 {{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker LDAP,') }},Docker LDAP,{{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker SSO,') }},Docker SSO
         }
 
 define servicegroup{
         servicegroup_name       docker_odoo
         alias                   Odoo Dockers
-        members                 {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker Odoo,') }},Docker Odoo,{{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker Odoo Test,') }},Docker Odoo Test,{{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',Docker Odoo Whitelists,') }},Docker Odoo Whitelists
+        members                 {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo,') }},Docker Odoo,{{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo Test,') }},Docker Odoo Test,{{ groups['docker_odoo'] | intersect(groups['docker_secure']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo Whitelists,') }},Docker Odoo Whitelists
         }
 
 define servicegroup{
         servicegroup_name       docker_cloud
         alias                   Cloud Dockers
-        members                 {{ groups['docker_owncloud'] | union(groups['docker_nextcloud']) | map('extract', hostvars, ['inventory_hostname']) | join(',Docker Cloud,') }},Docker Cloud
+        members                 {{ groups['docker_owncloud'] | union(groups['docker_nextcloud']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Cloud,') }},Docker Cloud
         }
 
 # Generic service definition template - This is NOT a real service, just a template!

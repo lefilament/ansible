@@ -7,7 +7,7 @@
 ###############################################################################
 
 # Define a host for the local machine
-{% for host in groups['vps_server'] | union(groups['dedicated_server']) %}
+{% for host in groups['all'] | difference(groups['physical_server']) | sort %}
 {% if host != inventory_hostname %}
 define host{
         use                     linux-server            
@@ -18,15 +18,7 @@ define host{
 
 {% endif %}
 {% endfor %}
-
-define host{
-        use                     linux-server            
-        host_name               {{ inventory_hostname }} 
-        alias                   {{ inventory_hostname }}
-        address                 172.23.0.1
-        }
-
-{% for host in groups['physical_server'] %}
+{% for host in groups['physical_server'] | sort %}
 define host{
         use                     linux-server-without-ping            
         host_name               {{ host }} 
@@ -35,6 +27,12 @@ define host{
         }
 
 {% endfor %}
+define host{
+        use                     linux-server            
+        host_name               {{ inventory_hostname }} 
+        alias                   {{ inventory_hostname }}
+        address                 172.24.0.1
+        }
 
 ###############################################################################
 ###############################################################################
@@ -49,14 +47,16 @@ define host{
 define hostgroup{
         hostgroup_name  servers_no_docker
         alias           Serveurs Sans Docker
-        members         {{ groups['all'] | difference(groups['docker']) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        members         {{ groups['all'] | difference(groups['docker']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         }
 
 define hostgroup{
-        hostgroup_name  servers_docker
+        hostgroup_name  servers_docker_secured
         alias           Serveurs Dockers
-        members         {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        members         {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         }
+
+
 
 ###############################################################################
 ###############################################################################
@@ -71,7 +71,7 @@ define hostgroup{
 
 define service{
         use                             generic-service    
-        host_name                       {{ groups['vps_server'] | union(groups['dedicated_server']) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['all'] | difference(groups['physical_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             PING
         check_command                   check_ping!100.0,20%!500.0,60%
         }
@@ -83,23 +83,23 @@ define service{
 
 define service{
         use                             generic-service,graphed-service 
-        host_name                       {{ groups['vps_server'] | union(groups['dedicated_server']) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Espace Disque
         check_command                   check_nrpe!check_hda1
         }
 
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['physical_server']  | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
-        service_description             Partition Boot
-        check_command                   check_nrpe!check_hda1
+        host_name                       {{ groups['extradisk_vps']  | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Disque Additionnel
+        check_command                   check_nrpe!check_vdb
         }
 
 define service{
-        use                             generic-service,graphed-service
-        host_name                       {{ groups['physical_server']  | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
-        service_description             Espace Disque
-        check_command                   check_nrpe!check_disk
+        use                             daily-service
+        host_name                       {{ groups['backup_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Backup Odoo Files
+        check_command                   check_nrpe!check_newest_file_age
         }
 
 # Define a service to check the number of currently logged in
@@ -110,7 +110,7 @@ define service{
 
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['vps_server'] | union(groups['dedicated_server']) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Utilisateurs Connectes
         check_command                   check_nrpe!check_users
         }
@@ -122,7 +122,7 @@ define service{
 
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Services en cours
         check_command                   check_nrpe!check_total_procs
         }
@@ -130,14 +130,14 @@ define service{
 # Define services to check for running processes
 define service{
         use                             generic-service
-        host_name                       {{ groups['odoo_server'] | union(groups['owncloud_server']) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['odoo_server'] | union(groups['owncloud_server']) | union(groups['bluemind_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Nginx Service
         check_command                   check_nrpe!check_procs_nginx
         }
 
 define service{
         use                             generic-service
-        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             SSHD Service
         check_command                   check_nrpe!check_procs_sshd
         }
@@ -146,7 +146,7 @@ define service{
 # Define a service to check the load on the local machine. 
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Charge CPU
         check_command                   check_nrpe!check_load
         }
@@ -154,7 +154,7 @@ define service{
 # SSH
 define service{
         use                             generic-service
-        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             SSH
         check_command                   check_ssh_port!2222
         }
@@ -162,7 +162,7 @@ define service{
 # Docker Proxy
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Docker Proxy
         check_command                   check_nrpe!check_docker_proxy
         }
@@ -170,7 +170,7 @@ define service{
 # Docker LDAP
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Docker LDAP
         check_command                   check_nrpe!check_docker_ldap
         }
@@ -178,7 +178,7 @@ define service{
 # Docker SSO
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['docker_auth'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Docker SSO
         check_command                   check_nrpe!check_docker_sso
         }
@@ -187,7 +187,7 @@ define service{
 # Docker Odoo 
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Docker Odoo
         check_command                   check_nrpe!check_docker_odoo
         }
@@ -195,7 +195,7 @@ define service{
 # Docker Odoo Test
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Docker Odoo Test
         check_command                   check_nrpe!check_docker_odoo_test
         }
@@ -203,7 +203,7 @@ define service{
 # Docker Odoo Whitelists
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['docker_odoo'] | intersect(groups['docker_secure']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Docker Odoo Whitelists
         check_command                   check_nrpe!check_docker_whitelists
         }
@@ -211,14 +211,14 @@ define service{
 # Docker Cloud
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['docker_owncloud'] | union(groups.docker_nextcloud) | map('extract', hostvars, ['inventory_hostname']) | join(',') }}
+        host_name                       {{ groups['docker_owncloud'] | union(groups.docker_nextcloud) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Docker Cloud
         check_command                   check_nrpe!check_docker_cloud
         }
 
 # Definition des services HTTP
 
-{% for host in groups['docker_auth'] %}
+{% for host in groups['docker_auth'] | sort %}
 # {{ host }} Docker Auth
 define service{
         use                             generic-service
@@ -250,7 +250,7 @@ define service{
 
 {% endfor %}
 
-{% for host in groups['docker_odoo'] %}
+{% for host in groups['docker_odoo'] | sort %}
 # {{ host }} Docker Odoo
 define service{
         use                             generic-service
@@ -282,7 +282,7 @@ define service{
 
 {% endfor %}
 
-{% for host in groups['docker_owncloud'] | union(groups.docker_nextcloud) %}
+{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) | sort %}
 # {{ host }} Docker Cloud
 define service{
         use                             generic-service
@@ -315,7 +315,7 @@ define service{
 {% endif %}
 {% endfor %}
 
-{% for host in groups['docker_nagios'] %}
+{% for host in groups['docker_nagios'] | sort %}
 # {{ host }} Docker Nagios
 # HTTPS + certificate verification on Dockers
 #define service{
@@ -334,7 +334,7 @@ define service{
 {% endfor %}
 
 
-{% for host in groups['odoo_server'] %}
+{% for host in groups['odoo_server'] | sort %}
 # {{ host }} Odoo
 define service{
         use                             generic-service            
@@ -358,7 +358,7 @@ define service{
         }
 {% endfor %}
 
-{% for host in groups['owncloud_server']  %}
+{% for host in groups['owncloud_server'] | sort %}
 # {{ host }} Owncloud 
 define service{
         use                             generic-service            
