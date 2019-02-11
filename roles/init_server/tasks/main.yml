@@ -44,7 +44,7 @@
   user:
     name: "{{ host_user }}"
     group: "{{ host_user }}"
-    password: "{{ host_password | password_hash('sha512') }}"
+    password: "{{ host_password | password_hash('sha512', 65534 | random(seed=inventory_hostname) | string) }}"
     generate_ssh_key: yes
     shell: /bin/bash
   register: publickey
