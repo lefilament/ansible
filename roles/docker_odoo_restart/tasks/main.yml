@@ -1,7 +1,8 @@
 ---
 - name: pull odoo docker image
   docker_image:
-    name: remifilament/odoo:10.0
+    name: lefilament/odoo:{{ odoo_version }}
+    force: yes
   tags: rebuild_pull_test
 
 - name: rebuild odoo docker test
