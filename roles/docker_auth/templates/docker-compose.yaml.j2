@@ -61,6 +61,8 @@ services:
     build: sso
     image: filament/lemonldap:1.9-debian
     container_name: sso
+    extra_hosts:
+    - "handler.{{ sso_url }}:127.0.0.1"
     restart: always
     volumes:
     - lemonldap_conf:/var/lib/lemonldap-ng/conf
