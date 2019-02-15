@@ -16,3 +16,10 @@ cloud_onlyoffice: yes
 # Document collaboration OnlyOffice URL
 cloud_onlyoffice_url: "{{ SERVER_onlyoffice_url }}"
 
+# Document collaboration present for Collabora ?
+cloud_collabora: yes
+# Collabora admin user and password
+cloud_collabora_admin_user: "{{ SERVER_collabora_admin_user }}"
+cloud_collabora_admin_pass: "{{ SERVER_collabora_admin_pass }}"
+# Document collaboration Collabora URL
+cloud_collabora_url: "{{ SERVER_collabora_url }}"
