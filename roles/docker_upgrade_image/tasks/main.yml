@@ -1,0 +1,158 @@
+---
+
+# Auth images
+# OpenLDAP
+- name: pull auth OpenLDAP docker image
+  docker_image:
+    name: lefilament/openldap
+    force: yes
+  when: inventory_hostname in groups.docker_auth
+  tags: upgrade_auth, pull_openldap
+  notify: restart auth dockers
+
+# PhpLDAPAdmin
+- name: pull auth OpenLDAP docker image
+  docker_image:
+    name: osixia/phpldapadmin
+    force: yes
+  when: inventory_hostname in groups.docker_auth
+  tags: upgrade_auth, pull_phpldapadmin
+  notify: restart auth dockers
+
+# LemonLDAP
+- name: rebuild auth sso Docker
+  docker_image:
+    path: /home/docker/auth/sso
+    name: filament/lemonldap:1.9-debian
+    force: yes
+  when: inventory_hostname in groups.docker_auth
+  tags: upgrade_auth, build_lemonldap
+  notify: restart auth dockers
+
+
+# Nagios images
+# Nagios
+- name: pull nagios docker image
+  docker_service:
+    project_src: /home/docker/nagios/
+    pull: yes
+  when: inventory_hostname in groups.docker_nagios
+  tags: upgrade_nagios
+
+
+## NextCloud images
+# Nextcloud
+- name: pull nextcloud docker images
+  docker_service:
+    project_src: /home/docker/
+    files: nextcloud.yaml
+    project_name: nextcloud
+    pull: yes
+  async: 120
+  poll: 10
+  when: inventory_hostname in groups.docker_nextcloud and not ansible_check_mode
+  tags: upgrade_nextcloud
+  notify:
+    - set trusted domain
+    - overwrite protocol
+
+# Backup
+- name: rebuild backup-nextcloud docker
+  docker_image:
+    name: filament/duplicity:mysql
+    path: /home/docker/backups
+    dockerfile: Dockerfile-nextbak
+    force: yes
+  when: inventory_hostname in groups.docker_nextcloud | intersect(groups.maintenance_contract)
+  tags: upgrade_nextcloud, build_backup_nc
+
+
+## Odoo
+# Odoo docker image
+- name: pull odoo docker image
+  docker_image:
+    name: filament/odoo
+    path: /home/docker/odootest/odoo
+    force: yes
+  when: inventory_hostname in groups.docker_odoo
+  tags: upgrade_odoo_test, build_odoo
+
+# Postgres
+- name: pull odoo postgres docker image
+  docker_image:
+    name: postgres:{{ odoo_db_version }}-alpine
+    force: yes
+  when: inventory_hostname in groups.docker_odoo
+  tags: upgrade_odoo_test, pull_postgres
+  notify: restart odoo test dockers
+
+# Mailhog
+- name: pull odoo mailhog docker image
+  docker_image:
+    name: mailhog/mailhog
+    force: yes
+  when: inventory_hostname in groups.docker_odoo
+  tags: upgrade_odoo_test, pull_mailhog
+  notify: restart odoo test dockers
+
+# Whitelists
+- name: restart odoo docker whitelists
+  docker_service:
+    project_src: /home/docker
+    files: whitelists.yaml
+    project_name: whitelists
+    pull: yes
+  when: inventory_hostname in groups.docker_odoo
+  tags: upgrade_odoo_test, pull_whitelists
+
+# Postfix relay
+- name: pull odoo postfix docker image
+  docker_image:
+    name: tecnativa/postfix-relay
+    force: yes
+  when: inventory_hostname in groups.docker_odoo and mailname is defined
+  tags: upgrade_odoo_prod, pull_postfix
+  notify: restart odoo prod dockers
+
+# Backups
+- name: rebuild backup-odoo docker
+  docker_image:
+    name: tecnativa/duplicity:postgres
+    force: yes
+  when: inventory_hostname in groups.docker_odoo | intersect(groups.maintenance_contract)
+  tags: upgrade_odoo_prod, pull_backup_odoo
+
+
+## Proxy
+- name: restart proxy dockers
+  docker_service:
+    project_src: /home/docker/
+    files: inverseproxy.yaml
+    project_name: inverseproxy
+    pull: yes
+  when: inventory_hostname in groups.docker
+  tags: upgrade_proxy
+
+## Owncloud images
+# Owncloud docker image
+- name: pull owncloud docker images
+  docker_service:
+    project_src: /home/docker/
+    files: owncloud.yaml
+    project_name: owncloud
+    pull: yes
+  async: 120
+  poll: 10
+  when: inventory_hostname in groups.docker_owncloud and not ansible_check_mode
+  tags: upgrade_owncloud
+
+# Backup file
+- name: rebuild backup-owncloud docker
+  docker_image:
+    name: filament/duplicity:mysql
+    path: /home/docker/backups
+    dockerfile: Dockerfile-ownbak
+    force: yes
+  when: inventory_hostname in groups.docker_owncloud | intersect(groups.maintenance_contract)
+  tags: upgrade_owncloud, build_backup_oc
+

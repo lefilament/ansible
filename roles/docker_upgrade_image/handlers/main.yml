@@ -1,0 +1,34 @@
+---
+# Auth
+- name: restart auth dockers
+  docker_service:
+    project_src: /home/docker/auth
+    recreate: always
+    restarted: yes
+    remove_orphans: yes
+  async: 600
+  poll: 10
+  when: not ansible_check_mode
+
+# Nextcloud
+- name: set trusted domain
+  shell: docker exec -u www-data nextcloud php occ --no-warnings "config:system:set" trusted_domains 1 --value="{{ cloud_url }}"
+
+- name: overwrite protocol
+  shell: docker exec -u www-data nextcloud php occ --no-warnings "config:system:set" overwriteprotocol --value="https"
+
+# Odoo
+- name: restart odoo test dockers
+  docker_service:
+    project_src: /home/docker/odootest/
+    remove_orphans: yes
+    recreate: always
+    restarted: yes
+
+- name: restart odoo prod dockers
+  docker_service:
+    project_src: /home/docker/odoo/
+    remove_orphans: yes
+    recreate: always
+    restarted: yes
+
