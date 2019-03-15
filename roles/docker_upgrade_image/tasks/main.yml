@@ -1,5 +1,16 @@
 ---
 
+## Proxy
+- name: restart proxy dockers
+  docker_service:
+    project_src: /home/docker/
+    files: inverseproxy.yaml
+    project_name: inverseproxy
+    pull: yes
+  when: inventory_hostname in groups.docker
+  tags: upgrade_proxy
+
+
 # Auth images
 # OpenLDAP
 - name: pull auth OpenLDAP docker image
@@ -8,16 +19,14 @@
     force: yes
   when: inventory_hostname in groups.docker_auth
   tags: upgrade_auth, pull_openldap
-  notify: restart auth dockers
 
 # PhpLDAPAdmin
-- name: pull auth OpenLDAP docker image
+- name: pull auth PhpLDAPAdmin docker image
   docker_image:
     name: osixia/phpldapadmin
     force: yes
   when: inventory_hostname in groups.docker_auth
   tags: upgrade_auth, pull_phpldapadmin
-  notify: restart auth dockers
 
 # LemonLDAP
 - name: rebuild auth sso Docker
@@ -27,8 +36,13 @@
     force: yes
   when: inventory_hostname in groups.docker_auth
   tags: upgrade_auth, build_lemonldap
-  notify: restart auth dockers
 
+# Auth
+- name: restart auth dockers
+  docker_service:
+    project_src: /home/docker/auth
+  when: inventory_hostname in groups.docker_auth
+  tags: upgrade_auth
 
 # Nagios images
 # Nagios
@@ -75,7 +89,7 @@
     path: /home/docker/odootest/odoo
     force: yes
   when: inventory_hostname in groups.docker_odoo
-  tags: upgrade_odoo_test, build_odoo
+  tags: upgrade_odoo_test
 
 # Postgres
 - name: pull odoo postgres docker image
@@ -84,7 +98,6 @@
     force: yes
   when: inventory_hostname in groups.docker_odoo
   tags: upgrade_odoo_test, pull_postgres
-  notify: restart odoo test dockers
 
 # Mailhog
 - name: pull odoo mailhog docker image
@@ -93,7 +106,6 @@
     force: yes
   when: inventory_hostname in groups.docker_odoo
   tags: upgrade_odoo_test, pull_mailhog
-  notify: restart odoo test dockers
 
 # Whitelists
 - name: restart odoo docker whitelists
@@ -102,8 +114,15 @@
     files: whitelists.yaml
     project_name: whitelists
     pull: yes
-  when: inventory_hostname in groups.docker_odoo
+  when: inventory_hostname in groups.docker_odoo | intersect(groups.docker_secure)
   tags: upgrade_odoo_test, pull_whitelists
+
+# Odoo test
+- name: restart odoo test dockers
+  docker_service:
+    project_src: /home/docker/odootest
+  when: inventory_hostname in groups.docker_odoo
+  tags: upgrade_odoo_test
 
 # Postfix relay
 - name: pull odoo postfix docker image
@@ -112,7 +131,13 @@
     force: yes
   when: inventory_hostname in groups.docker_odoo and mailname is defined
   tags: upgrade_odoo_prod, pull_postfix
-  notify: restart odoo prod dockers
+
+# Odoo prod
+- name: restart odoo prod dockers
+  docker_service:
+    project_src: /home/docker/odoo
+  when: inventory_hostname in groups.docker_odoo
+  tags: upgrade_odoo_prod
 
 # Backups
 - name: rebuild backup-odoo docker
@@ -122,16 +147,6 @@
   when: inventory_hostname in groups.docker_odoo | intersect(groups.maintenance_contract)
   tags: upgrade_odoo_prod, pull_backup_odoo
 
-
-## Proxy
-- name: restart proxy dockers
-  docker_service:
-    project_src: /home/docker/
-    files: inverseproxy.yaml
-    project_name: inverseproxy
-    pull: yes
-  when: inventory_hostname in groups.docker
-  tags: upgrade_proxy
 
 ## Owncloud images
 # Owncloud docker image
