@@ -109,13 +109,8 @@
   tags: bank
 
 - name: Install necessary python modules
-  pip:  name="{{ item }}"
-  with_items:
-    - prettytable
-    - cssselect
-    - html2text
-    - unidecode
-    - pbr
+  pip:
+    name: ['prettytable', 'cssselect', 'html2text', 'unidecode', 'pbr']
   when: banking is defined
   tags: bank
 
