@@ -186,3 +186,22 @@
       readonly TMOUT
       export TMOUT
   when: ansible_os_family == "RedHat"
+
+- name: check that chroot directory for SFTP users exist
+  file:
+    name: /mnt/vdb/backup/sftp
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  when: inventory_hostname in groups.backup_server
+
+- name: check that directories for SFTP for Odoo servers exist
+  file:
+    name: /mnt/vdb/backup/sftp/{{ hostvars[item].inventory_hostname | lower }}
+    state: directory
+    owner: "{{  hostvars[item].backup_sftp_user }}"
+    group: sftpgroup
+    mode: 0755
+  with_items: "{{ groups.maintenance_sftp | intersect(groups.odoo_server | union(groups.docker_odoo)) }}"
+  when: inventory_hostname in groups.backup_server
