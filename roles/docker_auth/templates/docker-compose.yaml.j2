@@ -53,6 +53,9 @@ services:
     labels:
       traefik.docker.network: "inverseproxy_shared"
       traefik.enable: "true"
+      traefik.frontend.headers.STSSeconds: "15552000"
+      traefik.frontend.headers.STSIncludeSubdomains: "true"
+      traefik.frontend.headers.STSPreload: "true"
       traefik.frontend.passHostHeader: "true"
       traefik.port: "80"
       traefik.own.frontend.rule: "Host:{{ ldap_url }}"
@@ -71,6 +74,9 @@ services:
     labels:
       traefik.docker.network: "inverseproxy_shared"
       traefik.enable: "true"
+      traefik.frontend.headers.STSSeconds: "15552000"
+      traefik.frontend.headers.STSIncludeSubdomains: "true"
+      traefik.frontend.headers.STSPreload: "true"
       traefik.frontend.passHostHeader: "true"
       traefik.port: "80"
       traefik.own.frontend.rule: "Host:manager.{{ sso_url }}, {{ sso_url }}, handler.{{ sso_url }}{% if inventory_hostname in groups['docker_nagios'] %}, {{ nagios_url }}{% endif %}"
