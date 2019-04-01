@@ -24,13 +24,19 @@ default_odoo_custom_modules_oca:
      - partner_firstname
   - repo: server-tools
     modules:
-     - auth_session_timeout
      - auth_brute_force
      - date_range
      - password_security
+  - repo: server-brand
+    modules:
+     - disable_odoo_online
   - repo: social
     modules:
+     - mail_debrand
      - mail_restrict_follower_selection
   - repo: web
     modules:
+     - web_environment_ribbon
      - web_export_view
+     - web_responsive
+     - web_timeline

@@ -25,66 +25,14 @@
   tags: preinstall
 
 - name: Install tool packages
-  apt: name="{{ item }}" force="yes" install_recommends=no
-  with_items:
-    - wget
-    - git
-    - bzr
-    - bzrtools
-    - python-pip
-    - postgresql
-    - postgresql-server-dev-all
-    - python-all-dev
-    - python-imaging
-    - python-dev
-    - python-setuptools
-    - libxml2-dev
-    - libxslt1-dev
-    - libevent-dev
-    - libsasl2-dev
-    - libldap2-dev
-    - libffi-dev
-    - pkg-config
-    - libtiff5-dev
-    - libjpeg8-dev
-    - libjpeg-dev
-    - zlib1g-dev
-    - libfreetype6-dev
-    - liblcms2-dev
-    - liblcms2-utils
-    - libwebp-dev
-    - tcl8.6-dev
-    - tk8.6-dev
-    - python-tk
-    - libyaml-dev
-    - fontconfig
-    - node-less
-    - nodejs
-    - nodejs-legacy
+  apt: 
+    name: "['wget', 'git', 'bzr', 'bzrtools', 'python-pip', 'postgresql', 'postgresql-server-dev-all', 'python-all-dev', 'python-dev', 'python-pil', 'python-setuptools', 'libxml2-dev', 'libxslt1-dev', 'libevent-dev', 'libsasl2-dev', 'libldap2-dev', 'libffi-dev', 'pkg-config', 'libtiff5-dev', 'libjpeg8-dev', 'libjpeg-dev', 'zlib1g-dev', 'libfreetype6-dev', 'liblcms2-dev', 'liblcms2-utils', 'libwebp-dev', 'tcl8.6-dev', 'tk8.6-dev', 'python-tk', 'libyaml-dev', 'fontconfig', 'node-less', 'nodejs']"
+    force: yes 
+    install_recommends: no
   tags: preinstall
 
-#- name: download wkhtmltox
-#  get_url: url="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz" dest="/root"
-#  tags: preinstall
-
-- name: Download and extract wktmltox from archive
-  unarchive: src="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox-0.12.5-1_linux-generic-amd64.tar.xz" remote_src=yes dest="/"
-  register: tar_has_been_run
-  tags: preinstall
-
-- name: Remove any old version of wkhtmltox
-  apt: name=wkhtmltox state=absent purge=yes force=yes install_recommends=no
-  when: tar_has_been_run.skipped is not defined
-  tags: preinstall
-
-- name: Copy wkhtml to pdf in /usr/bin
-  copy: src="/wkhtmltox/bin/wkhtmltopdf" dest="/usr/bin/wkhtmltopdf" remote_src="True" mode=0755
-  when: tar_has_been_run.skipped is not defined
-  tags: preinstall
-
-- name: Copy wkhtml to image in /usr/bin
-  copy: src="/wkhtmltox/bin/wkhtmltoimage" dest="/usr/bin/wkhtmltoimage" remote_src="True" mode=0755
-  when: tar_has_been_run.skipped is not defined
+- name: Install wkhtmltox
+  apt: deb="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.{{ ansible_distribution_release }}_amd64.deb"
   tags: preinstall
 
 - name: Install npm package
@@ -126,12 +74,21 @@
   when: banking is defined
   tags: bank
 
+- name: Create OFX directory
+  file:
+    name: /ofx
+    state: directory
+    owner: "{{ odoo_user }}" 
+    group: "{{ odoo_user }}"
+  when: banking is defined
+  tags: bank
+
 - name: add cron job to get bank accounts every day
   cron: 
     name: import bank moves
     minute: 30
     hour: 20
-    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /tmp/bank_account_import.ofx ; chmod 444 /tmp/bank_account_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /ofx/bank_account_import.ofx ; chmod 444 /ofx/bank_account_import.ofx
   when: banking is defined
   tags: bank
 
@@ -140,7 +97,7 @@
     name: import bank moves account 2
     minute: 50
     hour: 20
-    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /tmp/bank_account2_import.ofx ; chmod 444 /tmp/bank_account2_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /OFX/bank_account2_import.ofx ; chmod 444 /ofx/bank_account2_import.ofx
   when: banking is defined and bank_account2 is defined
   tags: bank
 
@@ -149,7 +106,7 @@
     name: import bank 2 moves
     minute: 25
     hour: 20
-    job: /root/weboob/tools/local_run.sh boobank history {{ bank2_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /tmp/bank2_account_import.ofx ; chmod 444 /tmp/bank2_account_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank2_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /ofx/bank2_account_import.ofx ; chmod 444 /ofx/bank2_account_import.ofx
   when: banking is defined and bank2_account is defined
   tags: bank
 
@@ -158,29 +115,15 @@
     name: import bank 2 moves account 2
     minute: 45
     hour: 20
-    job: /root/weboob/tools/local_run.sh boobank history {{ bank2_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /tmp/bank2_account2_import.ofx ; chmod 444 /tmp/bank2_account2_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank2_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /ofx/bank2_account2_import.ofx ; chmod 444 /ofx/bank2_account2_import.ofx
   when: banking is defined and bank2_account2 is defined
   tags: bank
 
 #--------------------------------------------------
 # Install ODOO
 #--------------------------------------------------
-#- name: checkout updates of menu.js if exists for theme
-#  lineinfile:
-#    name: /opt/odoo/addons/web/static/src/js/menu.js
-#    regexp: "= remaining_space"
-#    line: "            if ($(this).width() >= remaining_space) {"
-#  register: menu_modified
-
 - name: Download ODOO Server
   git: depth="1" version="{{ odoo_version }}" repo="https://www.github.com/odoo/odoo" dest="{{ odoo_home }}" 
-
-#- name: Make again updates of menu.js if where existing before - not working since menu_modified seems OK when not modified
-#  lineinfile:
-#    name: /opt/odoo/addons/web/static/src/js/menu.js
-#    regexp: "= remaining_space"
-#    line: "            if ($(this).width() >= remaining_space-180) {"
-#  when: menu_modified
 
 - name: Create custom module directory
   file: state=directory name="{{ odoo_home }}/custom/addons" 
@@ -198,12 +141,8 @@
   pip:  requirements="{{ odoo_home }}/requirements.txt"
 
 - name: Install WTForms, pysftp, suds and pyopenssl
-  pip:  name="{{ item }}"
-  with_items:
-    - WTForms
-    - pysftp
-    - suds
-    - pyopenssl
+  pip:  
+    name: "['WTForms', 'pysftp', 'suds', 'pyopenssl]"
 
 #--------------------------------------------------
 # Configure PostgreSQL Server
@@ -238,7 +177,7 @@
 # Configure ODOO custom modules
 #--------------------------------------------------
 - name: Install Odoo custom modules in {{ odoo_home }}/custom/addons
-  git: repo="https://github.com/lefilament/{{ item }}.git" dest="{{ odoo_home }}/custom/addons/{{ item }}" version="{{ odoo_version }}"
+  git: repo="https://bitbucket.org/chaudlesmarmots/{{ item }}.git" dest="{{ odoo_home }}/custom/addons/{{ item }}" version="{{ odoo_version }}"
   with_items: "{{ odoo_custom_modules | default([]) }}"
   when: odoo_custom_modules is defined
   notify: restart-odoo

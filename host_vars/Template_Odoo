@@ -31,7 +31,7 @@ odoo_other_modules:
 
 # OCA modules - these should be limited to the ones not already defined 
 # in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these
-# are already part of remifilament/odoo:10.0 docker)
+# are already part of lefilament/odoo:10.0 docker)
 odoo_custom_modules_oca:
   - repo: server-tools
     modules:
