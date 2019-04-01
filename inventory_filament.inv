@@ -7,6 +7,13 @@ NewHost2
 [vps_server]
 NewHost3
 
+[maintenance_contract:children]
+maintenance_nfs
+maintenance_sftp
+
+[maintenance_nfs]
+NewHost3
+
 [maintenance_sftp]
 NewHost2
 
@@ -34,6 +41,12 @@ NewHost1
 
 [owncloud_server]
 NewHost1
+
+[backup_server]
+BackupHost1
+
+[extradisk_vps]
+BackupHost1
 
 [nagios_server]
 NewHost1

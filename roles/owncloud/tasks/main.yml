@@ -115,7 +115,7 @@
     name: Backup Owncloud
     minute: 45
     hour: 3
-    day: 2
+    weekday: 7
     job: /root/backup-owncloud.sh
 
 

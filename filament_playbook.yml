@@ -5,6 +5,12 @@
   roles:
   - { role: init_server, tags: init }
 
+- hosts: backup_server
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: backup_server_conf, tags: backup }
+
 - hosts: docker
   gather_facts: no
   become: yes

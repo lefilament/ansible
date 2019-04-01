@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Copyright © 2019 Le Filament (<http://www.le-filament.com>)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+
+TODAY=`date +%F`
+
+{% for host in groups['maintenance_nfs'] | intersect(groups['docker_odoo'] | union(groups['odoo_server'])) %}
+if [ -f /mnt/vdb/backup/{{ host|lower }}/{{ host|lower }}.$TODAY ]
+then
+    mv /mnt/vdb/backup/{{ host|lower }}/{{ host|lower }}.$TODAY /mnt/vdb/backup/versions/
+fi
+if [ -f /mnt/vdb/backup/{{ host|lower }}/{{ host|lower }}-docker.$TODAY ]
+then
+    mv /mnt/vdb/backup/{{ host|lower }}/{{ host|lower }}-docker.$TODAY /mnt/vdb/backup/versions/
+fi
+{% endfor %}
+{% for host in groups['maintenance_sftp'] | intersect(groups['docker_odoo'] | union(groups['odoo_server'])) %}
+if [ -f /mnt/vdb/backup/sftp/{{ host|lower }}/{{ host|lower }}.$TODAY ]
+then
+    mv /mnt/vdb/backup/sftp/{{ host|lower }}/{{ host|lower }}.$TODAY /mnt/vdb/backup/versions/
+fi
+if [ -f /mnt/vdb/backup/sftp/{{ host|lower }}/{{ host|lower }}-docker.$TODAY ]
+then
+    mv /mnt/vdb/backup/sftp/{{ host|lower }}/{{ host|lower }}-docker.$TODAY /mnt/vdb/backup/versions/
+fi
+{% endfor %}
+if [ -f /home/{{ host_user }}/versions/{{ inventory_hostname|lower }}.$TODAY ]
+then
+    cp -a /home/{{ host_user }}/versions/{{ inventory_hostname|lower }}.$TODAY /mnt/vdb/backup/versions/
+fi

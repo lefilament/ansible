@@ -1,0 +1,135 @@
+---
+
+- name: Create SFTP group
+  group:
+    name: sftpgroup
+
+- name: Create SFTP users
+  user:
+    name: "{{ hostvars[item].backup_sftp_user }}"
+    group: sftpgroup
+    password: "!"
+    shell: /sbin/nologin
+  with_items: "{{ groups.maintenance_sftp }}"
+
+- name: add SFTP users public key to authorized keys
+  authorized_key:
+    key: "{{ hostvars[item].host_user_public_key }}"
+    user: "{{ hostvars[item].backup_sftp_user }}"
+    exclusive: yes
+  with_items: "{{ groups.maintenance_sftp }}"
+
+- name: Enable ssh connection for {{ host_user }} and SFTP users on Backup server
+  blockinfile:
+    path: /etc/ssh/sshd_config
+    block: |
+      AllowUsers {{ host_user }} {{ groups.maintenance_sftp | map('extract', hostvars, ['backup_sftp_user']) | sort | join("  ") }}
+      AllowGroups {{ host_user }} sftpgroup
+
+      Match Group sftpgroup
+              ChrootDirectory /mnt/vdb/backup/sftp
+              ForceCommand internal-sftp
+              AllowTcpForwarding no
+              GatewayPorts no
+              X11Forwarding no
+  notify: restart-sshd
+
+- name: add nfs-server and pip package
+  apt:
+    name: ['nfs-kernel-server', 'python-pip', 'python-dev', 'python-setuptools', 'python-wheel']
+    force: yes
+    install_recommends: no
+
+- name: check that directories for mounting NFS for Odoo on Backup servers exist
+  file:
+    name: /mnt/vdb/backup/{{ hostvars[item].inventory_hostname|lower }}
+    state: directory
+    owner: lefilament
+    group: lefilament
+    mode: 0755
+  with_items: "{{ groups.maintenance_nfs | intersect(groups.odoo_server | union(groups.docker_odoo)) }}"
+
+- name: check that chroot directory for SFTP users exist
+  file:
+    name: /mnt/vdb/backup/sftp
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: check that directories for SFTP for Odoo servers exist
+  file:
+    name: /mnt/vdb/backup/sftp/{{ hostvars[item].inventory_hostname | lower }}
+    state: directory
+    owner: "{{  hostvars[item].backup_sftp_user }}"
+    group: sftpgroup
+    mode: 0755
+  with_items: "{{ groups.maintenance_sftp | intersect(groups.odoo_server | union(groups.docker_odoo)) }}"
+
+- name: check that directories for mounting NFS for Mail servers on Backup servers exist
+  file:
+    name: /mnt/vdb/backup/{{ hostvars[item].inventory_hostname|lower }}
+    state: directory
+    owner: lefilament
+    group: lefilament
+    mode: 0755
+  with_items: "{{ groups.bluemind_server }}"
+
+- name: check that directory for collecting openstack facts exists
+  file:
+    name: /mnt/vdb/backup/cloud
+    state: directory
+    owner: lefilament
+    group: lefilament
+    mode: 0755
+
+- name: check that directory for collecting os/packages/docker facts exists
+  file:
+    name: /mnt/vdb/backup/versions
+    state: directory
+    owner: lefilament
+    group: lefilament
+    mode: 0755
+
+- name: create NFS exports on Backup server
+  template:
+    src: exports.j2
+    dest: /etc/exports
+    owner: root
+    group: root
+    mode: 0644
+  notify: reload-nfs
+
+- name: install swift client
+  pip:
+    name: ['python-swiftclient', 'python-keystoneclient']
+
+- name: Copy OpenStack Fact Collection script on server
+  template:
+    src: retrieve_openstack_facts.sh.j2
+    dest: /root/retrieve_openstack_facts.sh
+    owner: root
+    group: root
+    mode: 0700
+
+- name: add cron job to check OpenStack content every day
+  cron:
+    name: check openstack facts
+    minute: 43
+    hour: 6
+    job: /root/retrieve_openstack_facts.sh
+
+- name: Move versioned files from NFS directory to versions
+  template:
+    src: move_versioned_files.sh.j2
+    dest: /root/move_versioned_files.sh
+    owner: root
+    group: root
+    mode: 0700
+
+- name: add cron job to check OpenStack content every day
+  cron:
+    name: move versioned files
+    minute: 43
+    hour: 2
+    job: /root/move_versioned_files.sh

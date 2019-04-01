@@ -180,9 +180,27 @@ define servicegroup{
         }
 
 define servicegroup{
+        servicegroup_name       nfs-mount
+        alias                   Montage NFS
+        members                 {{ groups['maintenance_nfs'] | intersect(groups['odoo_server'] | union(groups['docker_odoo'])) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Montage NFS,') }},Montage NFS
+        }
+
+define servicegroup{
         servicegroup_name       cpu-utilisation
         alias                   Utilisation CPU
         members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Charge CPU,') }},Charge CPU,TAS-Windows,Charge CPU
+        }
+
+define servicegroup{
+        servicegroup_name       ram-utilisation
+        alias                   Utilisation RAM
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Charge RAM,') }},Charge RAM,TAS-Windows,Charge RAM
+        }
+
+define servicegroup{
+        servicegroup_name       fail2ban
+        alias                   FAIL2BAN
+        members                 {{ groups['all'] | difference(groups['physical_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Fail2ban,') }},Fail2ban
         }
 
 define servicegroup{
@@ -265,6 +283,18 @@ define service{
         check_interval           	1440
         retry_interval            	5
 	notification_interval		1440
+        register                        0
+        }
+
+# Hourly service definition template - This is NOT a real service, just a template!
+
+define service{
+        name                            hourly-service
+        use                             generic-service         
+        max_check_attempts              2
+        check_interval                  60
+        retry_interval                  5
+        notification_interval           120
         register                        0
         }
 

@@ -265,6 +265,13 @@ define command{
         command_line    /opt/nagiosgraph/bin/insert.pl
 	}
 
+
+# check_memory 
+define command { 
+	command_name	check_mem 
+	command_line	/opt/nagios/libexec/check_mem -w 80 -c 95 
+}
+
 # check_nrpe 
 define command {
         command_name    check_nrpe
@@ -275,4 +282,16 @@ define command {
 define command {
         command_name    check_nrpe_win
         command_line    $USER1$/check_nrpe -2 -P 8192 -H $HOSTADDRESS$ -c $ARG1$ $ARG2$
+}
+
+# check_fail2ban
+define command {
+        command_name    check_fail2ban
+        command_line    $USER1$/custom/check_fail2ban -p /etc/fail2ban/jail.local -l /var/log/fail2ban.log -w 5 -c 10
+}
+
+# trigger_docker_hub
+define command {
+        command_name    trigger_docker_hub
+        command_line    $USER1$/check_http -H $ARG1$ -S -u $ARG2$ -j POST
 }

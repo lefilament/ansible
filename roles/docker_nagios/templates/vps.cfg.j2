@@ -96,10 +96,24 @@ define service{
         }
 
 define service{
+        use                             hourly-service
+        host_name                       {{ groups['maintenance_nfs'] | intersect(groups['odoo_server'] | union(groups['docker_odoo'])) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Montage NFS
+        check_command                   check_nrpe!check_mountpoint
+        }
+
+define service{
         use                             daily-service
         host_name                       {{ groups['backup_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Backup Odoo Files
         check_command                   check_nrpe!check_newest_file_age
+        }
+
+define service{
+        use                             daily-service,graphed-service
+        host_name                       {{ groups['backup_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Backup Cloud Files
+        check_command                   check_nrpe!check_cloud_storage
         }
 
 # Define a service to check the number of currently logged in
@@ -151,12 +165,28 @@ define service{
         check_command                   check_nrpe!check_load
         }
 
+# Define a service to check the RAM on the local machine. 
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Charge RAM
+        check_command                   check_nrpe!check_mem
+        }
+
 # SSH
 define service{
         use                             generic-service
         host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             SSH
         check_command                   check_ssh_port!2222
+        }
+
+# FAIL2BAN
+define service{
+        use                             generic-service
+        host_name                       {{ groups['all'] | difference(groups['physical_server']) | map('extract', hostvars, ['inventory_hostname']) | sort |  join(',') }}
+        service_description             Fail2ban
+        check_command                   check_nrpe!check_fail2ban
         }
 
 # Docker Proxy
