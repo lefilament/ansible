@@ -127,7 +127,7 @@
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "^allowed_hosts="
-    line: allowed_hosts=172.24.0.2,127.0.0.1
+    line: allowed_hosts=192.168.239.2,127.0.0.1
   when: inventory_hostname in groups.docker_nagios
   notify: restart nrpe
   tags: nrpe_config

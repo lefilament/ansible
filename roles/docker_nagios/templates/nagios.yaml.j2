@@ -13,8 +13,13 @@ services:
     networks:
       auth_default:
       public:
+        ipv4_address: 192.168.239.2
 
 networks:
     auth_default:
         external: true
     public:
+        ipam:
+            driver: default
+            config:
+              - subnet: "192.168.239.0/24"

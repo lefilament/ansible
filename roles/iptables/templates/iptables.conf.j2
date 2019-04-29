@@ -22,7 +22,7 @@
 -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
 {% endif %}
 {% if inventory_hostname in groups.docker_nagios %}
--A INPUT -s 172.23.0.0/24 -p tcp -m tcp --dport 443 -m state --state NEW,ESTABLISHED -j ACCEPT
+-A INPUT -s 192.168.239.0/24 -p tcp -m tcp --dport 443 -m state --state NEW,ESTABLISHED -j ACCEPT
 {% endif %}
 # DNS
 -A INPUT -p tcp -m tcp --dport 53 -j ACCEPT
@@ -36,7 +36,7 @@
 {% endfor %}
 {% endif %}
 {% if inventory_hostname in groups.docker_nagios %}
--A INPUT -s 172.23.0.0/24 -p tcp -m tcp --dport 5666 -m state --state NEW,ESTABLISHED -j ACCEPT
+-A INPUT -s 192.168.239.0/24 -p tcp -m tcp --dport 5666 -m state --state NEW,ESTABLISHED -j ACCEPT
 {% endif %}
 # Log incoming traffic blocked by IPTables
 -A INPUT -j LOGGING

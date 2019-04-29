@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Copyright © 2019 Le Filament (<http://www.le-filament.com>)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+
+mkdir -p /home/{{ host_user }}/versions
+TODAY=`date +%F`
+
+file="/home/{{ host_user }}/versions/{{ inventory_hostname|lower }}.$TODAY"
+latest_file="/home/{{ host_user }}/versions/{{ inventory_hostname|lower }}.latest"
+printf "DATE = $TODAY"  > $file
+printf "\n\n-- OS version --\n" >> $file
+cat /etc/redhat-release >> $file
+printf "\n\n-- Installed OS packages --\n" >>  $file
+yum list installed  >> $file
+printf "\n\n-- Installed Python packages --\n" >> $file
+pip list installed >> $file
+cp $file $latest_file
+chmod 644 $file $latest_file
+{% if inventory_hostname in groups.odoo_server %}
+{% if inventory_hostname in groups.maintenance_nfs %}
+cp $file /mnt/backup-odoo/
+{% endif %}
+{% if inventory_hostname in groups.maintenance_sftp %}
+sftp -P {{ ansible_ssh_port }} -o IdentityFile=/home/docker/backups/.ssh/id_rsa {{ backup_sftp_user }}@{{ hostvars['Filament_Backup'].ansible_ssh_host }} << COMMANDS
+put $file {{ inventory_hostname|lower }}/
+quit
+COMMANDS
+{% endif %}
+{% endif %}
