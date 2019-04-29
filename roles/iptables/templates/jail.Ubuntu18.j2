@@ -836,7 +836,7 @@ banaction = %(banaction_allports)s
 
 [directadmin]
 logpath = /var/log/directadmin/login.log
-port = 2222
+port = {{ ansible_ssh_port }}
 
 [portsentry]
 logpath  = /var/lib/portsentry/portsentry.history

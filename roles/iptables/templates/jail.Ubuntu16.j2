@@ -214,7 +214,7 @@ action = %(action_mwl)s
 
 [sshd]
 enabled = true
-port    = 2222
+port    = {{ ansible_ssh_port }}
 logpath = %(sshd_log)s
 
 
@@ -223,7 +223,7 @@ logpath = %(sshd_log)s
 # The mail-whois action send a notification e-mail with a whois request
 # in the body.
 enabled = true
-port    = 2222
+port    = {{ ansible_ssh_port }}
 logpath = %(sshd_log)s
 
 
@@ -768,7 +768,7 @@ banaction = iptables-allports
 [directadmin]
 enabled = false
 logpath = /var/log/directadmin/login.log
-port = 2222
+port = {{ ansible_ssh_port }}
 
 [portsentry]
 enabled  = false

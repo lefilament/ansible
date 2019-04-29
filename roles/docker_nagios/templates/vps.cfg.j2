@@ -178,7 +178,7 @@ define service{
         use                             generic-service
         host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             SSH
-        check_command                   check_ssh_port!2222
+        check_command                   check_ssh_port!{{ ansible_ssh_port }}
         }
 
 # FAIL2BAN
