@@ -177,7 +177,7 @@
 # Configure ODOO custom modules
 #--------------------------------------------------
 - name: Install Odoo custom modules in {{ odoo_home }}/custom/addons
-  git: repo="https://bitbucket.org/chaudlesmarmots/{{ item }}.git" dest="{{ odoo_home }}/custom/addons/{{ item }}" version="{{ odoo_version }}"
+  git: repo="https://bitbucket.org/lefilament/{{ item }}.git" dest="{{ odoo_home }}/custom/addons/{{ item }}" version="{{ odoo_version }}"
   with_items: "{{ odoo_custom_modules | default([]) }}"
   when: odoo_custom_modules is defined
   notify: restart-odoo

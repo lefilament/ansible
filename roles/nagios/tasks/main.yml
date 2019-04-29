@@ -161,6 +161,17 @@
 #--------------------------------------------------
 # AJOUT CUSTOM SCRIPTs
 #--------------------------------------------------
+- name: get custom scripts from bitbucket
+  git: repo="https://bitbucket.org/lefilament/nagios-plugin.git" dest="/usr/local/nagios/libexec/custom"
+  tags: nagios_config
+
+- name: set file rights on custom plugins
+  file: name={{ item }} mode=0555
+  with_items:
+    - /usr/local/nagios/libexec/custom/check_mem
+    - /usr/local/nagios/libexec/custom/check_fail2ban
+  tags: nagios_config
+
 - name: get ssl certificate verification module from github
   get_url:
     url: https://raw.githubusercontent.com/matteocorti/check_ssl_cert/v1.56.0/check_ssl_cert
