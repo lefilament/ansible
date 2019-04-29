@@ -29,6 +29,10 @@
 -A INPUT -p udp -m udp --dport 53 -j ACCEPT
 # DHCP
 -A INPUT -p udp -m udp --dport 68 -j ACCEPT
+{% if inventory_hostname in groups.backup_server %}
+# NFS
+-A INPUT -p tcp -m tcp --dport 2049 -j ACCEPT
+{% endif %}
 # NRPE
 {% if inventory_hostname not in groups.docker_nagios %}
 {% for host in groups.docker_nagios %}
@@ -70,7 +74,11 @@
 -A OUTPUT -p udp -m udp --dport 67 -j ACCEPT
 # GPG
 -A OUTPUT -p udp -m udp --dport 11371 -j ACCEPT
-{% if inventory_hostname in groups['odoo_server'] %}
+{% if inventory_hostname not in groups.maintenance_nfs %}
+# NFS
+-A OUTPUT -p tcp -m tcp --dport 2049 -j ACCEPT
+{% endif %}
+{% if inventory_hostname in groups.odoo_server %}
 # IMAP
 -A OUTPUT -p tcp -m tcp --dport 993 -j ACCEPT
 {% endif %}
