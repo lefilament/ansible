@@ -187,9 +187,21 @@ define servicegroup{
         }
 
 define servicegroup{
+        servicegroup_name       ram-utilisation
+        alias                   Utilisation RAM
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Charge RAM,') }},Charge RAM,TAS-Windows,Charge RAM
+        }
+
+define servicegroup{
+        servicegroup_name       fail2ban
+        alias                   FAIL2BAN
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Fail2ban,') }},Fail2ban
+        }
+
+define servicegroup{
         servicegroup_name       services
         alias                   services
-        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',SSHD Service,') }},SSHD Service,{{ groups['all'] | difference(groups['docker']) | map('extract', hostvars, ['inventory_hostname']) | join(',Nginx Service,') }},Nginx Service,{{ groups['odoo_server'] | map('extract', hostvars, ['inventory_hostname']) | join(',Odoo Service,') }},Odoo Service,{{ groups['owncloud_server'] | map('extract', hostvars, ['inventory_hostname']) | join(',Owncloud Service,') }},Owncloud Service
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',SSHD Service,') }},SSHD Service,{{ groups['all'] | difference(groups['backup_server']) | difference(groups['docker']) | map('extract', hostvars, ['inventory_hostname']) | join(',Nginx Service,') }},Nginx Service,{{ groups['odoo_server'] | map('extract', hostvars, ['inventory_hostname']) | join(',Odoo Service,') }},Odoo Service,{{ groups['owncloud_server'] | map('extract', hostvars, ['inventory_hostname']) | join(',Owncloud Service,') }},Owncloud Service
         }
 
 # Generic service definition template - This is NOT a real service, just a template!
