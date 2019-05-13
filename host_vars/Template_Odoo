@@ -24,10 +24,11 @@ odoo_custom_modules:
  - lefilament_projets
 
 odoo_other_modules:
- - repo: elico
-   url: https://github.com/Elico-Corp/odoo-addons.git
+ - repo: filament
+   url: https://github.com/lefilament/bank-statement-import.git
+   branch: 12.0-mig-account_bank_statement_import_ofx
    modules:
-     - auth_cas
+     - account_bank_statement_import_ofx
 
 # OCA modules - these should be limited to the ones not already defined 
 # in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these
