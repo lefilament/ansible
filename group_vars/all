@@ -2,5 +2,5 @@
 
 ansible_ssh_user: "{{ host_user }}"
 ansible_sudo_pass: "{{ host_password }}"
-default_ssh_port: 2222
-ansible_ssh_port: "{{ default_ssh_port }}"
+default_sshd_port: 2222
+ansible_ssh_port: "{{ default_sshd_port }}"
