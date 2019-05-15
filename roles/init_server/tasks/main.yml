@@ -76,7 +76,7 @@
   lineinfile:
     name: /etc/ssh/sshd_config
     regexp: "^#?Port"
-    line: "Port {{ ansible_ssh_port }}"
+    line: "Port {{ default_sshd_port }}"
   notify: restart-sshd
   tags: sshd
 
