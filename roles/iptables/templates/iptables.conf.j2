@@ -74,7 +74,7 @@
 -A OUTPUT -p udp -m udp --dport 67 -j ACCEPT
 # GPG
 -A OUTPUT -p udp -m udp --dport 11371 -j ACCEPT
-{% if inventory_hostname not in groups.maintenance_nfs %}
+{% if inventory_hostname in groups.maintenance_nfs %}
 # NFS
 -A OUTPUT -p tcp -m tcp --dport 2049 -j ACCEPT
 {% endif %}
