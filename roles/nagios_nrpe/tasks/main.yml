@@ -445,7 +445,7 @@
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "check_procs_owncloud"
-    line: "command[check_procs_owncloud]=/usr/local/nagios/libexec/check_procs -w 10 -c 2: -C php-fpm7.0"
+    line: "command[check_procs_owncloud]=/usr/local/nagios/libexec/check_procs -w 10 -c 2: -C php-fpm7.2"
   when: inventory_hostname in groups.owncloud_server
   notify: restart nrpe
   tags: nrpe_config
