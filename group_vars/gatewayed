@@ -1,0 +1,3 @@
+---
+
+ansible_ssh_common_args: '-o ProxyCommand="ssh -p {{ ansible_sshd_port }} -q {{ hostvars["BackupHost1"].host_user }}@{{ hostvars["BackupHost1"].ansible_ssh_host }} nc %h %p"'
