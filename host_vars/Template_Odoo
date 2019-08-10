@@ -23,16 +23,9 @@ odoo_custom_modules:
  - lefilament_link_sale_project
  - lefilament_projets
 
-odoo_other_modules:
- - repo: filament
-   url: https://github.com/lefilament/bank-statement-import.git
-   branch: 12.0-mig-account_bank_statement_import_ofx
-   modules:
-     - account_bank_statement_import_ofx
-
 # OCA modules - these should be limited to the ones not already defined 
 # in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these
-# are already part of lefilament/odoo:10.0 docker)
+# are already part of lefilament/odoo:10.0 and 12.0 dockers)
 odoo_custom_modules_oca:
   - repo: server-tools
     modules:
@@ -49,6 +42,19 @@ odoo_custom_modules_oca:
      - cms_form
      - cms_info
      - cms_status_message
+
+# Other Odoo modules where git repo is the module
+odoo_other_repos:
+ - repo: filament
+   url: git@github.com:lefilament/link_sale_project_tasks.git
+
+# Other Odoo modules where git repo contains various modules
+odoo_other_modules:
+ - repo: filament
+   url: https://github.com/lefilament/bank-statement-import.git
+   branch: 12.0-mig-account_bank_statement_import_ofx
+   modules:
+     - account_bank_statement_import_ofx
 
 ## Mail server configuration - for Odoo
 # Mail domain
@@ -83,3 +89,6 @@ bank_account2: "{{ SERVER_bank_account2 }}"
 
 # SFTP user to connect to backup server - host needs to be in maintenance_sftp group in inventory
 backup_sftp_user: "{{ SERVER_backup_sftp_user }}"
+
+# GIT private keys - for retrieving private repos
+git_private_keys: "{{ SERVER_git_private_keys }}"
