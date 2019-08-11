@@ -20,7 +20,7 @@ define host{
 {% endfor %}
 {% for host in groups['physical_server'] | sort %}
 define host{
-        use                     linux-server-without-ping            
+        use                     generic-host
         host_name               {{ host }} 
         alias                   {{ host }}
         address                 {{ hostvars[host].ansible_ssh_host }}
