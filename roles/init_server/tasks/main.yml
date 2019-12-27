@@ -57,7 +57,7 @@
     line: "host_user_public_key: {{ publickey.ssh_public_key }}"
   connection: local
   become: no
-  when: inventory_hostname in groups.maintenance_sftp
+  when: inventory_hostname not in groups.odoo_server and initial_playbook is not defined
 
 - name: add user in sudoers
   lineinfile:
@@ -133,7 +133,7 @@
   blockinfile:
     path: /etc/ssh/sshd_config
     block: |
-      AllowUsers {{ host_user }} {{ groups.maintenance_sftp | map('extract', hostvars, ['backup_sftp_user']) | sort | join("  ") }}
+      AllowUsers {{ host_user }} {{ (groups.servers | difference(groups.backup_server)) | map('extract', hostvars, ['backup_sftp_user']) | sort | join(" ") }}
       AllowGroups {{ host_user }} sftpgroup
 
       Match Group sftpgroup
@@ -169,7 +169,7 @@
     name: nfs-common
     force: yes
     install_recommends: no
-  when: inventory_hostname not in groups.backup_server and ansible_os_family == "Debian" and inventory_hostname in groups.maintenance_nfs
+  when: inventory_hostname not in groups.backup_server and ansible_os_family == "Debian" and inventory_hostname in (groups.maintenance_contract | union(groups.odoo_server)))
 
 - name: Mount NFS share on Odoo servers
   mount: 
@@ -178,31 +178,8 @@
     fstype: nfs4
     opts: rw,nosuid,noexec
     state: mounted
-  when: inventory_hostname in groups.maintenance_nfs | intersect(groups.odoo_server)
+  when: inventory_hostname in groups.maintenance_contract | intersect(groups.odoo_server)
 
-- name: Mount NFS share on Bluemind servers
-  mount:
-    name: /var/backups
-    src: "{{ hostvars['Filament_Backup'].ansible_ssh_host }}:/mnt/vdb/backup/{{ inventory_hostname|lower }}"
-    fstype: nfs4
-    opts: rw,soft,noatime,nodiratime,nosuid,exec
-    state: mounted
-  when: inventory_hostname in groups.bluemind_server
-
-- name: Create mount directory for backup Odoo docker
-  file:
-    path: /home/docker/backups/odoo
-    state: directory
-  when:  inventory_hostname in groups.maintenance_nfs | intersect(groups.docker_odoo)
-
-- name: Mount NFS share for Odoo docker
-  mount:
-    name: /home/docker/backups/odoo
-    src: "{{ hostvars['Filament_Backup'].ansible_ssh_host }}:/mnt/vdb/backup/{{ inventory_hostname|lower }}"
-    fstype: nfs4
-    opts: rw,nosuid,noexec,noauto
-    state: present
-  when: inventory_hostname in groups.maintenance_nfs | intersect(groups.docker_odoo)
 
 - name: Copy Installed Package Listing script on server
   template:

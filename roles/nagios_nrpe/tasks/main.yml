@@ -127,7 +127,7 @@
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "^allowed_hosts="
-    line: allowed_hosts=192.168.239.2,127.0.0.1
+    line: allowed_hosts={{ groups.docker_nagios | map('extract', hostvars, ['ansible_ssh_host']) | join(',') }},192.168.239.2,127.0.0.1
   when: inventory_hostname in groups.docker_nagios
   notify: restart nrpe
   tags: nrpe_config
@@ -145,6 +145,7 @@
     - /usr/local/nagios/libexec/custom-plugin/check_fail2ban.sh
     - /usr/local/nagios/libexec/custom-plugin/check_mountpoint.sh
     - /usr/local/nagios/libexec/custom-plugin/check_newest_file_age.sh
+    - /usr/local/nagios/libexec/custom-plugin/check_odoo_storage.sh
 
 - name: add check_docker script
   get_url: 
@@ -253,7 +254,7 @@
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "check_docker_whitelists"
     line: "command[check_docker_whitelists]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container whitelists.* --cpu 5:10 --memory 5:7:% --status running"
-  when: inventory_hostname in groups.docker | intersect(groups.docker_odoo)
+  when: inventory_hostname in groups.docker_odoo
   notify: restart nrpe
   tags: nrpe_config
 
@@ -345,25 +346,6 @@
     regexp: "check_load -r -w"
     line: "command[check_load]=/usr/local/nagios/libexec/check_load -r -w .35,.30,.25 -c .55,.50,.45"
   notify: restart nrpe
-  when: inventory_hostname not in groups.bluemind_server|union(groups.log_server)
-  tags: nrpe_config
-
-- name: Modify check load for Log Server in nrpe.cfg 
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_load -r -w"
-    line: "command[check_load]=/usr/local/nagios/libexec/check_load -r -w .85,.80,.75 -c .99,.95,.90"
-  notify: restart nrpe
-  when: inventory_hostname in groups.log_server
-  tags: nrpe_config
-
-- name: Modify check load for Mail Server in nrpe.cfg 
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_load -r -w"
-    line: "command[check_load]=/usr/local/nagios/libexec/check_load -r -w .85,.80,.75 -c .99,.95,.90"
-  notify: restart nrpe
-  when: inventory_hostname in groups.bluemind_server
   tags: nrpe_config
 
 # Memory RAM usage check
@@ -376,21 +358,12 @@
   tags: nrpe_config
 
 # NFS mountpoints check
-- name: add plugin check mountpoints to verify that Docker Odoo backup dir is not mounted
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_mountpoint"
-    line: "command[check_mountpoint]=/usr/local/nagios/libexec/custom-plugin/check_mountpoint.sh -I /home/docker/backups/odoo"
-  when: inventory_hostname in groups.maintenance_nfs | intersect(groups.docker_odoo)
-  notify: restart nrpe
-  tags: nrpe_config
-
 - name: add plugin check mountpoints to verify that non-Docker Odoo backup dir is mounted
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "check_mountpoint"
     line: "command[check_mountpoint]=/usr/local/nagios/libexec/custom-plugin/check_mountpoint.sh /mnt/backup-odoo"
-  when: inventory_hostname in groups.maintenance_nfs | intersect(groups.odoo_server)
+  when: inventory_hostname in groups.maintenance_contract | intersect(groups.odoo_server)
   notify: restart nrpe
   tags: nrpe_config
 
@@ -399,7 +372,7 @@
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "check_newest_file_age"
-    line: "command[check_newest_file_age]=/usr/local/nagios/libexec/custom-plugin/check_newest_file_age.sh -V --base-dir /mnt/vdb/backup/ -d '{{ groups.maintenance_nfs | intersect(groups.odoo_server | union(groups.docker_odoo)) | join(' ') | lower }} sftp/{{ groups.maintenance_sftp | join(' /sftp/') | lower }}'"
+    line: "command[check_newest_file_age]=/usr/local/nagios/libexec/custom-plugin/check_newest_file_age.sh -V --base-dir /mnt/vdb/backup/ -d '{{ groups.maintenance_contract | intersect(groups.odoo_server) | join(' ') | lower }}'"
   when: inventory_hostname in groups.backup_server
   notify: restart nrpe
   tags: nrpe_config

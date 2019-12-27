@@ -8,3 +8,6 @@ host_password: "{{ SERVER_srv_pass }}"
 # Root password
 host_root_password: "{{ SERVER_srv_root_pass }}"
 
+## SFTP user to connect to Backup server
+backup_sftp_user: "{{ SERVER_backup_sftp_user }}"
+

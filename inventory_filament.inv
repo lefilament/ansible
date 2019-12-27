@@ -7,14 +7,8 @@ NewHost2
 [vps_server]
 NewHost3
 
-[maintenance_contract:children]
-maintenance_nfs
-maintenance_sftp
-
-[maintenance_nfs]
+[maintenance_contract]
 NewHost3
-
-[maintenance_sftp]
 NewHost2
 
 [docker]

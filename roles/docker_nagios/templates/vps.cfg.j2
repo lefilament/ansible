@@ -66,17 +66,6 @@ define hostgroup{
 ###############################################################################
 ###############################################################################
 
-
-# Define a service to "ping" the local machine
-
-define service{
-        use                             generic-service    
-        host_name                       {{ groups['all'] | difference(groups['physical_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
-        service_description             PING
-        check_command                   check_ping!100.0,20%!500.0,60%
-        }
-
-
 # Define a service to check the disk space of the root partition
 # on the local machine.  Warning if < 20% free, critical if
 # < 10% free space on partition.
@@ -97,7 +86,7 @@ define service{
 
 define service{
         use                             hourly-service
-        host_name                       {{ groups['maintenance_nfs'] | intersect(groups['odoo_server'] | union(groups['docker_odoo'])) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        host_name                       {{ groups['maintenance_contract'] | intersect(groups['odoo_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Montage NFS
         check_command                   check_nrpe!check_mountpoint
         }
@@ -105,8 +94,15 @@ define service{
 define service{
         use                             daily-service
         host_name                       {{ groups['backup_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
-        service_description             Backup Odoo Files
+        service_description             Backup Odoo Servers
         check_command                   check_nrpe!check_newest_file_age
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ groups['backup_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Backup Odoo Dockers
+        check_command                   check_nrpe!check_odoo_storage
         }
 
 define service{
@@ -144,7 +140,7 @@ define service{
 # Define services to check for running processes
 define service{
         use                             generic-service
-        host_name                       {{ groups['odoo_server'] | union(groups['owncloud_server']) | union(groups['bluemind_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        host_name                       {{ groups['odoo_server'] | union(groups['owncloud_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Nginx Service
         check_command                   check_nrpe!check_procs_nginx
         }
@@ -254,7 +250,7 @@ define service{
         use                             generic-service
         host_name                       {{ host }}
         service_description             PhpLdapAdmin {{ hostvars[host].ldap_url }}
-        check_command                   check_https!'{{ hostvars[host].ldap_url }}'
+        check_command                   check_https!'{{ hostvars[host].ldap_url }}'!/
         }
 
 define service{
@@ -268,7 +264,7 @@ define service{
         use                             generic-service
         host_name                       {{ host }}
         service_description             SSO Server {{ hostvars[host].sso_url }}
-        check_command                   check_https!'{{ hostvars[host].sso_url }}'
+        check_command                   check_https!'{{ hostvars[host].sso_url }}'!/
         }
 
 define service{
@@ -286,7 +282,7 @@ define service{
         use                             generic-service
         host_name                       {{ host }}
         service_description             Odoo Server {{ hostvars[host].odoo_url }}
-        check_command                   check_https!'{{ hostvars[host].odoo_url }}'
+        check_command                   check_https!'{{ hostvars[host].odoo_url }}'!/web/login
         }
 
 define service{
@@ -300,7 +296,7 @@ define service{
         use                             generic-service
         host_name                       {{ host }}
         service_description             Odoo Test Server {{ hostvars[host].odoo_test_url }}
-        check_command                   check_https!'{{ hostvars[host].odoo_test_url }}'
+        check_command                   check_https!'{{ hostvars[host].odoo_test_url }}'!/web/login
         }
 
 define service{
@@ -318,7 +314,7 @@ define service{
         use                             generic-service
         host_name                       {{ host }}
         service_description             Cloud Server {{ hostvars[host].cloud_url }}
-        check_command                   check_https!'{{ hostvars[host].cloud_url }}'
+        check_command                   check_https!'{{ hostvars[host].cloud_url }}'!/login
         }
 
 define service{
@@ -333,7 +329,7 @@ define service{
         use                             generic-service
         host_name                       {{ host }}
         service_description             OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}
-        check_command                   check_https!'{{ hostvars[host].cloud_onlyoffice_url }}'
+        check_command                   check_https!'{{ hostvars[host].cloud_onlyoffice_url }}'!/healthcheck
         }
 
 define service{
@@ -370,7 +366,7 @@ define service{
         use                             generic-service            
         host_name                       {{ host }} 
         service_description             Odoo {{ hostvars[host].odoo_url }}
-        check_command                   check_https!'{{ hostvars[host].odoo_url }}'
+        check_command                   check_https!'{{ hostvars[host].odoo_url }}'!/web/login
         }
 
 define service{
@@ -394,7 +390,7 @@ define service{
         use                             generic-service            
         host_name                       {{ host }} 
         service_description             OwnCloud {{ hostvars[host].cloud_url }}
-        check_command                   check_https!'{{ hostvars[host].cloud_url }}'
+        check_command                   check_https!'{{ hostvars[host].cloud_url }}'!/index.php/login
         }
 
 define service{

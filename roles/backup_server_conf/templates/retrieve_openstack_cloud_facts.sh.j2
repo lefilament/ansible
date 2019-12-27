@@ -5,13 +5,13 @@
 
 
 # Configure variables
-export OS_AUTH_URL="{{ swift_authurl }}"
-export OS_IDENTITY_API_VERSION={{ swift_authversion }}
-export OS_TENANT_ID="{{ swift_tenantid }}"
-export OS_TENANT_NAME="{{ swift_tenantname }}"
-export OS_USERNAME="{{ swift_username }}"
-export OS_PASSWORD="{{ swift_password }}"
-export OS_REGION_NAME="{{ swift_regionname }}"
+export OS_AUTH_URL="{{ swift_cloud_authurl }}"
+export OS_IDENTITY_API_VERSION={{ swift_cloud_authversion }}
+export OS_TENANT_ID="{{ swift_cloud_tenantid }}"
+export OS_TENANT_NAME="{{ swift_cloud_tenantname }}"
+export OS_USERNAME="{{ swift_cloud_username }}"
+export OS_PASSWORD="{{ swift_cloud_password }}"
+export OS_REGION_NAME="{{ swift_cloud_regionname }}"
 
 TODAY=`date +%F`
 

@@ -10,20 +10,20 @@
     group: sftpgroup
     password: "!"
     shell: /sbin/nologin
-  with_items: "{{ groups.maintenance_sftp }}"
+  with_items: "{{ groups.servers | difference(groups.backup_server)}}"
 
 - name: add SFTP users public key to authorized keys
   authorized_key:
     key: "{{ hostvars[item].host_user_public_key }}"
     user: "{{ hostvars[item].backup_sftp_user }}"
     exclusive: yes
-  with_items: "{{ groups.maintenance_sftp }}"
+  with_items: "{{ groups.servers | difference(groups.backup_server) }}"
 
 - name: Enable ssh connection for {{ host_user }} and SFTP users on Backup server
   blockinfile:
     path: /etc/ssh/sshd_config
     block: |
-      AllowUsers {{ host_user }} {{ groups.maintenance_sftp | map('extract', hostvars, ['backup_sftp_user']) | sort | join("  ") }}
+      AllowUsers {{ host_user }} {{ groups.servers | difference(groups.backup_server) | map('extract', hostvars, ['backup_sftp_user']) | sort | join(" ") }}
       AllowGroups {{ host_user }} sftpgroup
 
       Match Group sftpgroup
@@ -47,7 +47,7 @@
     owner: lefilament
     group: lefilament
     mode: 0755
-  with_items: "{{ groups.maintenance_nfs | intersect(groups.odoo_server | union(groups.docker_odoo)) }}"
+  with_items: "{{ groups.maintenance_contract | intersect(groups.odoo_server) }}"
 
 - name: check that chroot directory for SFTP users exist
   file:
@@ -57,25 +57,24 @@
     group: root
     mode: 0755
 
-- name: check that directories for SFTP for Odoo servers exist
+- name: check that directories for SFTP for all servers exist
   file:
     name: /mnt/vdb/backup/sftp/{{ hostvars[item].inventory_hostname | lower }}
     state: directory
     owner: "{{  hostvars[item].backup_sftp_user }}"
     group: sftpgroup
     mode: 0755
-  with_items: "{{ groups.maintenance_sftp | intersect(groups.odoo_server | union(groups.docker_odoo)) }}"
+  with_items: "{{ groups.servers | difference(groups.backup_server) }}"
 
-- name: check that directories for mounting NFS for Mail servers on Backup servers exist
+- name: check that directory for collecting openstack Cloud facts exists
   file:
-    name: /mnt/vdb/backup/{{ hostvars[item].inventory_hostname|lower }}
+    name: /mnt/vdb/backup/cloud
     state: directory
     owner: lefilament
     group: lefilament
     mode: 0755
-  with_items: "{{ groups.bluemind_server }}"
 
-- name: check that directory for collecting openstack facts exists
+- name: check that directory for collecting openstack Odoo facts exists
   file:
     name: /mnt/vdb/backup/cloud
     state: directory
@@ -104,22 +103,37 @@
   pip:
     name: ['python-swiftclient', 'python-keystoneclient']
 
-- name: Copy OpenStack Fact Collection script on server
+- name: Copy OpenStack Cloud Fact Collection script on server
   template:
-    src: retrieve_openstack_facts.sh.j2
-    dest: /root/retrieve_openstack_facts.sh
+    src: retrieve_openstack_cloud_facts.sh.j2
+    dest: /root/retrieve_openstack_cloud_facts.sh
     owner: root
     group: root
     mode: 0700
 
-- name: add cron job to check OpenStack content every day
+- name: add cron job to check OpenStack Cloud content every day
   cron:
-    name: check openstack facts
+    name: check openstack cloud facts
     minute: 43
     hour: 6
-    job: /root/retrieve_openstack_facts.sh
+    job: /root/retrieve_openstack_cloud_facts.sh
 
-- name: Move versioned files from NFS directory to versions
+- name: Copy OpenStack Odoo Fact Collection script on server
+  template:
+    src: retrieve_openstack_odoo_facts.sh.j2
+    dest: /root/retrieve_openstack_odoo_facts.sh
+    owner: root
+    group: root
+    mode: 0700
+
+- name: add cron job to check OpenStack Cloud content every day
+  cron:
+    name: check openstack odoo facts
+    minute: 13
+    hour: 6
+    job: /root/retrieve_openstack_odoo_facts.sh
+
+- name: Move versioned files from SFTP directory to versions
   template:
     src: move_versioned_files.sh.j2
     dest: /root/move_versioned_files.sh
@@ -127,9 +141,9 @@
     group: root
     mode: 0700
 
-- name: add cron job to check OpenStack content every day
+- name: add cron job to move versioned files from SFTP directory to versions
   cron:
     name: move versioned files
     minute: 43
-    hour: 2
+    hour: 3
     job: /root/move_versioned_files.sh

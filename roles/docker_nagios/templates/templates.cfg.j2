@@ -61,9 +61,9 @@ define host{
         notification_interval           120             ; Resend notifications every 2 hours
         notification_options            d,u,r           ; Only send notifications for specific host states
         check_period                    24x7            ; By default, hosts are checked round the clock
-        check_interval                  2               ; Actively check the host every 5 minutes
-        retry_interval                  1               ; Schedule host check retries at 1 minute intervals
-        max_check_attempts              10              ; Check each host 10 times (max)
+        check_interval                  10              ; Actively check the host every 10 minutes
+        retry_interval                  2               ; Schedule host check retries at 2 minute intervals
+        max_check_attempts              3               ; Check each host 3 times (max)
         register                        0               ; DONT REGISTER THIS DEFINITION - ITS NOT A REAL HOST, JUST A TEMPLATE!
         }
 
@@ -89,14 +89,14 @@ define host{
 define servicegroup{
         servicegroup_name       web-services
         alias                   Services Web
-        members                 {% for host in groups['odoo_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Odoo {{ hostvars[host].odoo_url }}{% else %}{{ host }},Odoo {{ hostvars[host].odoo_url }},{% endif %}{% endfor %},{% for host in groups['owncloud_server'] | sort %}{% if loop.index == loop.length %}{{ host }},OwnCloud {{ hostvars[host].cloud_url }}{% else %}{{ host }},OwnCloud {{ hostvars[host].cloud_url }},{% endif %}{% endfor %},{% for host in groups['bluemind_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Webmail {{ hostvars[host].mail_url }}{% else %}{{ host }},Webmail {{ hostvars[host].mail_url }},{% endif %}{% endfor %},{% for host in groups['docker_odoo'] | sort %}{% if loop.index == loop.length %}{{ host }},Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Odoo Test Server {{ hostvars[host].odoo_test_url }}{% else %}{{ host }},Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Odoo Test Server {{ hostvars[host].odoo_test_url }},{% endif %}{% endfor %},{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) | sort %}{% if loop.index == loop.length %}{{ host }},Cloud Server {{ hostvars[host].cloud_url }}{% if hostvars[host].cloud_onlyoffice is defined %},{{ host }},OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}{% endif %}{% else %}{{ host }},Cloud Server {{ hostvars[host].cloud_url }},{% if hostvars[host].cloud_onlyoffice is defined %}{{ host }},OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }},{% endif %}{% endif %}{% endfor %},{% for host in groups['docker_auth'] | sort %}{% if loop.index == loop.length %}{{ host }},PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},SSO Server {{ hostvars[host].sso_url }}{% else %}{{ host }},PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},SSO Server {{ hostvars[host].sso_url }},{% endif %}{% endfor %}
+        members                 {% for host in groups['odoo_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Odoo {{ hostvars[host].odoo_url }}{% else %}{{ host }},Odoo {{ hostvars[host].odoo_url }},{% endif %}{% endfor %},{% for host in groups['owncloud_server'] | sort %}{% if loop.index == loop.length %}{{ host }},OwnCloud {{ hostvars[host].cloud_url }}{% else %}{{ host }},OwnCloud {{ hostvars[host].cloud_url }},{% endif %}{% endfor %},{% for host in groups['docker_odoo'] | sort %}{% if loop.index == loop.length %}{{ host }},Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Odoo Test Server {{ hostvars[host].odoo_test_url }}{% else %}{{ host }},Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Odoo Test Server {{ hostvars[host].odoo_test_url }},{% endif %}{% endfor %},{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) | sort %}{% if loop.index == loop.length %}{{ host }},Cloud Server {{ hostvars[host].cloud_url }}{% if hostvars[host].cloud_onlyoffice is defined %},{{ host }},OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}{% endif %}{% else %}{{ host }},Cloud Server {{ hostvars[host].cloud_url }},{% if hostvars[host].cloud_onlyoffice is defined %}{{ host }},OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }},{% endif %}{% endif %}{% endfor %},{% for host in groups['docker_auth'] | sort %}{% if loop.index == loop.length %}{{ host }},PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},SSO Server {{ hostvars[host].sso_url }}{% else %}{{ host }},PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},SSO Server {{ hostvars[host].sso_url }},{% endif %}{% endfor %}
 
         }
 
 define servicegroup{
         servicegroup_name       certificates
         alias                   Certificats
-        members                 {% for host in groups['odoo_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Odoo {{ hostvars[host].odoo_url }}{% else %}{{ host }},Certificate Odoo {{ hostvars[host].odoo_url }},{% endif %}{% endfor %},{% for host in groups['owncloud_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate OwnCloud {{ hostvars[host].cloud_url }}{% else %}{{ host }},Certificate OwnCloud {{ hostvars[host].cloud_url }},{% endif %}{% endfor %},{% for host in groups['bluemind_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Webmail {{ hostvars[host].mail_url }}{% else %}{{ host }},Certificate Webmail {{ hostvars[host].mail_url }},{% endif %}{% endfor %},{% for host in groups['docker_odoo'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }}{% else %}{{ host }},Certificate Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }},{% endif %}{% endfor %},{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Cloud Server {{ hostvars[host].cloud_url }}{% if hostvars[host].cloud_onlyoffice is defined %},{{ host }},Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}{% endif %}{% else %}{{ host }},Certificate Cloud Server {{ hostvars[host].cloud_url }},{% if hostvars[host].cloud_onlyoffice is defined %}{{ host }},Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }},{% endif %}{% endif %}{% endfor %},{% for host in groups['docker_auth'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},Certificate SSO Server {{ hostvars[host].sso_url }}{% else %}{{ host }},Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},Certificate SSO Server {{ hostvars[host].sso_url }},{% endif %}{% endfor %}
+        members                 {% for host in groups['odoo_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Odoo {{ hostvars[host].odoo_url }}{% else %}{{ host }},Certificate Odoo {{ hostvars[host].odoo_url }},{% endif %}{% endfor %},{% for host in groups['owncloud_server'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate OwnCloud {{ hostvars[host].cloud_url }}{% else %}{{ host }},Certificate OwnCloud {{ hostvars[host].cloud_url }},{% endif %}{% endfor %},{% for host in groups['docker_odoo'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }}{% else %}{{ host }},Certificate Odoo Server {{ hostvars[host].odoo_url }},{{ host }},Certificate Odoo Test Server {{ hostvars[host].odoo_test_url }},{% endif %}{% endfor %},{% for host in groups['docker_owncloud'] | union(groups['docker_nextcloud']) | sort %}{% if loop.index == loop.length %}{{ host }},Certificate Cloud Server {{ hostvars[host].cloud_url }}{% if hostvars[host].cloud_onlyoffice is defined %},{{ host }},Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}{% endif %}{% else %}{{ host }},Certificate Cloud Server {{ hostvars[host].cloud_url }},{% if hostvars[host].cloud_onlyoffice is defined %}{{ host }},Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }},{% endif %}{% endif %}{% endfor %},{% for host in groups['docker_auth'] | sort %}{% if loop.index == loop.length %}{{ host }},Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},Certificate SSO Server {{ hostvars[host].sso_url }}{% else %}{{ host }},Certificate PhpLdapAdmin {{ hostvars[host].ldap_url }},{{ host }},Certificate SSO Server {{ hostvars[host].sso_url }},{% endif %}{% endfor %}
 
         }
 
@@ -109,7 +109,7 @@ define servicegroup{
 define servicegroup{
         servicegroup_name       nfs-mount
         alias                   Montage NFS
-        members                 {{ groups['maintenance_nfs'] | intersect(groups['odoo_server'] | union(groups['docker_odoo'])) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Montage NFS,') }},Montage NFS
+        members                 {{ groups['maintenance_contract'] | intersect(groups['odoo_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Montage NFS,') }},Montage NFS
         }
 
 define servicegroup{
@@ -137,9 +137,9 @@ define servicegroup{
         }
 
 define servicegroup{
-        servicegroup_name       ping-ssh
-        alias                   Ping - SSH
-        members                 {{ groups['all'] | difference(groups['physical_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',PING,') }},PING,{{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',SSH,') }},SSH,Nagios Server,PING
+        servicegroup_name       ssh
+        alias                   SSH
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',SSH,') }},SSH
         }
 
 define servicegroup{

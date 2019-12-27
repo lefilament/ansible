@@ -153,13 +153,13 @@ define command{
 # 'check_http' command definition
 define command{
         command_name    check_http
-        command_line    $USER1$/check_http -I $HOSTADDRESS$ $ARG1$
+        command_line    $USER1$/check_http -H $ARG1$
         }
 
 # 'check_https' command definition
 define command{
         command_name    check_https
-        command_line    $USER1$/check_http -S -I $HOSTADDRESS$ $ARG1$
+        command_line    $USER1$/check_http -S -H $ARG1$ -u $ARG2$
         }
 
 # 'check_certif' command definition

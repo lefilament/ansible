@@ -8,10 +8,7 @@
 # /srv/nfs4        gss/krb5i(rw,sync,fsid=0,crossmnt,no_subtree_check)
 # /srv/nfs4/homes  gss/krb5i(rw,sync,no_subtree_check)
 #
-{% for host in groups['maintenance_nfs'] | intersect(groups['docker_odoo'] | union(groups['odoo_server'])) %}
+{% for host in groups['maintenance_contract'] | intersect(groups['odoo_server']) %}
 /mnt/vdb/backup/{{ host|lower }} {{ hostvars[host].ansible_ssh_host }}(rw,sync,all_squash,no_subtree_check,anonuid=1001,anongid=1001)
-{% endfor %}
-{% for host in groups['bluemind_server'] %}
-/mnt/vdb/backup/{{ host|lower }} {{ hostvars[host].ansible_ssh_host }}(rw,sync,no_root_squash,no_subtree_check)
 {% endfor %}
 

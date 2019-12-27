@@ -19,3 +19,4 @@
   - { ansible_ssh_pass: "{{ host_root_password }}" }
   - { ansible_ssh_port: 22 }
   - { ansible_connection: paramiko }
+  - { initial_playbook: true }

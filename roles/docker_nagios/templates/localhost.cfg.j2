@@ -37,17 +37,6 @@ define host{
 ###############################################################################
 ###############################################################################
 
-
-# Define a service to "ping" the local machine
-
-define service{
-        use                             generic-service
-        host_name                       Nagios Server
-        service_description             PING
-	check_command			check_ping!100.0,20%!500.0,60%
-        }
-
-
 define service{
         use                             generic-service
         host_name                       Nagios Server

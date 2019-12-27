@@ -34,11 +34,9 @@
 -A INPUT -p tcp -m tcp --dport 2049 -j ACCEPT
 {% endif %}
 # NRPE
-{% if inventory_hostname not in groups.docker_nagios %}
 {% for host in groups.docker_nagios %}
 -A INPUT -s {{ hostvars[host].ansible_ssh_host }} -p tcp -m tcp --dport 5666 -m state --state NEW,ESTABLISHED -j ACCEPT
 {% endfor %}
-{% endif %}
 {% if inventory_hostname in groups.docker_nagios %}
 -A INPUT -s 192.168.239.0/24 -p tcp -m tcp --dport 5666 -m state --state NEW,ESTABLISHED -j ACCEPT
 {% endif %}
@@ -74,7 +72,7 @@
 -A OUTPUT -p udp -m udp --dport 67 -j ACCEPT
 # GPG
 -A OUTPUT -p udp -m udp --dport 11371 -j ACCEPT
-{% if inventory_hostname in groups.maintenance_nfs %}
+{% if inventory_hostname in groups.maintenance_contract | intersect(groups.odoo_server) %}
 # NFS
 -A OUTPUT -p tcp -m tcp --dport 2049 -j ACCEPT
 {% endif %}
