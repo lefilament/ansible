@@ -1,0 +1,24 @@
+## Framadate configuration
+# Framadate URL
+date_url: "{{ lf_date_url }}"
+# Framadate DB
+date_db_root: "{{ lf_date_db_root }}"
+date_db_user: "{{ lf_date_db_user }}"
+date_db_pass: "{{ lf_date_db_pass }}"
+# Framadate Admin Password
+date_admin_user: "{{ lf_date_admin_user }}"
+date_admin_pass: "{{ lf_date_admin_pass }}"
+
+
+## Mail server configuration - for Framadate
+# Mail domain
+mailname: "{{ SERVER_mail_domain }}"
+# Mail server
+mailserver: "{{ SERVER_mail_srv_url }}"
+# SMTP port
+smtpport: 465
+# SMTP user
+smtpuser: "{{ SERVER_mail_date_user }}"
+# SMTP password
+smtppass: "{{ SERVER_mail_date_pass }}"
+

@@ -1,0 +1,10 @@
+## Etherpad configuration
+# Etherpad URL
+pad_url: "{{ SERVER_pad_url }}"
+# Etherpad DB
+pad_db_name: "{{ SERVER_pad_db_name }}"
+pad_db_user: "{{ SERVER_pad_db_user }}"
+pad_db_pass: "{{ SERVER_pad_db_pass }}"
+# Etherpad Admin Password
+pad_admin_pass: "{{ SERVER_pad_admin_pass }}"
+

@@ -1,0 +1,4 @@
+## Privatebin configuration
+# Privatebin URL
+privatebin_url: "{{ SERVER_privatebin_url }}"
+

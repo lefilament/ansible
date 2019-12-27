@@ -36,6 +36,15 @@ NewHost3
 [docker_auth]
 NewHost2
 
+[docker_etherpad]
+NewHost3
+
+[docker_framadate]
+NewHost3
+
+[docker_privatebin]
+NewHost3
+
 [odoo_server]
 NewHost1
 

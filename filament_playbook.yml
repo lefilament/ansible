@@ -42,6 +42,30 @@
   roles:
   - { role: docker_owncloud, tags: docker_owncloud }
 
+- hosts: docker_etherpad
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_etherpad, tags: docker_etherpad }
+
+- hosts: docker_privatebin
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_privatebin, tags: docker_privatebin }
+
+- hosts: docker_framadate
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_framadate, tags: docker_framadate }
+
+- hosts: ICCFinance_Pilotage
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: mssql_connect, tags: mssql }
+
 - hosts: odoo_server
   gather_facts: no
   become: yes

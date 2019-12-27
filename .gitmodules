@@ -10,3 +10,12 @@
 [submodule "roles/docker_server"]
 	path = roles/docker_server
 	url = git@github.com:lefilament/ansible_role_docker_server.git
+[submodule "roles/docker_etherpad"]
+	path = roles/docker_etherpad
+	url = git@github.com:lefilament/ansible_role_etherpad_docker.git
+[submodule "roles/docker_framadate"]
+	path = roles/docker_framadate
+	url = git@github.com:lefilament/ansible_role_framadate_docker.git
+[submodule "roles/docker_privatebin"]
+	path = roles/docker_privatebin
+	url = git@github.com:lefilament/ansible_role_privatebin_docker.git
