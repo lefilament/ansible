@@ -11,11 +11,31 @@ services:
       - ./stylesheets:/opt/nagios/share/stylesheets/
       - ./apache2/:/etc/apache2/sites-enabled/
     networks:
+{% if inventory_hostname in groups.docker_auth %}
       auth_default:
       public:
         ipv4_address: 192.168.239.2
+{% else %}
+      inverseproxy_shared:
+    labels:
+      traefik.docker.network: "inverseproxy_shared"
+      traefik.enable: "true"
+      traefik.http.routers.nagios-unsec.entrypoints: "http"
+      traefik.http.routers.nagios-unsec.middlewares: "https-redirect@file"
+      traefik.http.routers.nagios-unsec.rule: "Host(`{{ nagios_url }}`)"
+      traefik.http.routers.nagios-unsec.service: "nagios"
+      traefik.http.routers.nagios.entrypoints: "https"
+      traefik.http.routers.nagios.middlewares: "security-headers@file, auth@file"
+      traefik.http.routers.nagios.rule: "Host(`{{ nagios_url }}`)"
+      traefik.http.routers.nagios.service: "nagios"
+      traefik.http.routers.nagios.tls: "true"
+      traefik.http.routers.nagios.tls.certresolver: "le"
+      traefik.http.routers.nagios.tls.options: "default@file"
+      traefik.http.services.nagios.loadbalancer.server.port: "80"
+{% endif %}
 
 networks:
+{% if inventory_hostname in groups.docker_auth %}
     auth_default:
         external: true
     public:
@@ -23,3 +43,7 @@ networks:
             driver: default
             config:
               - subnet: "192.168.239.0/24"
+{% else %}
+  inverseproxy_shared:
+        external: true
+{% endif %}

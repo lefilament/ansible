@@ -3,9 +3,7 @@
 ## Proxy
 - name: restart proxy dockers
   docker_service:
-    project_src: /home/docker/
-    files: inverseproxy.yaml
-    project_name: inverseproxy
+    project_src: /home/docker/inverseproxy
     pull: yes
   when: inventory_hostname in groups.docker
   tags: upgrade_proxy
