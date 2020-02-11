@@ -17,5 +17,5 @@ export SWIFT_REGIONNAME={{ swift_regionname }}
 
 export PASSPHRASE="{{ cloud_backup_pass }}"
 
-duplicity full --volsize 200 --include /var/www/owncloud/data --include /var/www/owncloud/config --include /root/backup-$PGDATABASE.sql --exclude '**' / swift://nextcloud_sapoval
-duplicity remove-all-but-n-full 4 --force swift://nextcloud_sapoval
+duplicity full --volsize 200 --include /var/www/owncloud/data --include /var/www/owncloud/config --include /root/backup-$PGDATABASE.sql --exclude '**' / swift://owncloud_{{ inventory_hostname|lower }}
+duplicity remove-all-but-n-full 4 --force swift://owncloud_{{ inventory_hostname|lower }}
