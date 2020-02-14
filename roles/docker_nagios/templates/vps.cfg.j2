@@ -242,6 +242,38 @@ define service{
         check_command                   check_nrpe!check_docker_cloud
         }
 
+# Docker Etherpad
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_etherpad'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Docker Etherpad
+        check_command                   check_nrpe!check_docker_etherpad
+        }
+
+# Docker Framadate
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_framadate'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Docker Framadate
+        check_command                   check_nrpe!check_docker_framadate
+        }
+
+# Docker PrivateBin
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_privatebin'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Docker PrivateBin
+        check_command                   check_nrpe!check_docker_privatebin
+        }
+
+# Docker Tuleap
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_tuleap'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Docker Tuleap
+        check_command                   check_nrpe!check_docker_tuleap
+        }
+
 # Definition des services HTTP
 
 {% for host in groups['docker_auth'] | sort %}
@@ -359,6 +391,77 @@ define service{
         }
 {% endfor %}
 
+{% for host in groups['docker_etherpad'] | sort %}
+# {{ host }} Docker Etherpad
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             Etherpad Server {{ hostvars[host].pad_url }}
+        check_command                   check_https!'{{ hostvars[host].pad_url }}'!/
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate Etherpad Server {{ hostvars[host].pad_url }}
+        check_command                   check_certif!'{{ hostvars[host].pad_url }}'!443
+        }
+
+{% endfor %}
+
+{% for host in groups['docker_framadate'] | sort %}
+# {{ host }} Docker Framadate
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             Framadate Server {{ hostvars[host].date_url }}
+        check_command                   check_https!'{{ hostvars[host].date_url }}'!/
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate Framadate Server {{ hostvars[host].date_url }}
+        check_command                   check_certif!'{{ hostvars[host].date_url }}'!443
+        }
+
+{% endfor %}
+
+{% for host in groups['docker_privatebin'] | sort %}
+# {{ host }} Docker PrivateBin
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             PrivateBin Server {{ hostvars[host].privatebin_url }}
+        check_command                   check_https!'{{ hostvars[host].privatebin_url }}'!/
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate PrivateBin Server {{ hostvars[host].privatebin_url }}
+        check_command                   check_certif!'{{ hostvars[host].privatebin_url }}'!443
+        }
+
+{% endfor %}
+
+{% for host in groups['docker_tuleap'] | sort %}
+# {{ host }} Docker Tuleap
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             Tuleap Server {{ hostvars[host].tuleap_url }}
+        check_command                   check_https!'{{ hostvars[host].tuleap_url }}'!/
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate Tuleap Server {{ hostvars[host].tuleap_url }}
+        check_command                   check_certif!'{{ hostvars[host].tuleap_url }}'!443
+        }
+
+{% endfor %}
 
 {% for host in groups['odoo_server'] | sort %}
 # {{ host }} Odoo
@@ -382,6 +485,7 @@ define service{
         service_description             Odoo Service
         check_command                   check_nrpe!check_procs_odoo
         }
+
 {% endfor %}
 
 {% for host in groups['owncloud_server'] | sort %}
