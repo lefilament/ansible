@@ -39,6 +39,9 @@ NewHost3
 [docker_privatebin]
 NewHost3
 
+[docker_tuleap]
+NewHost3
+
 [odoo_server]
 NewHost1
 

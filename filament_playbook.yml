@@ -60,11 +60,12 @@
   roles:
   - { role: docker_framadate, tags: docker_framadate }
 
-- hosts: ICCFinance_Pilotage
+
+- hosts: docker_tuleap
   gather_facts: no
   become: yes
   roles:
-  - { role: mssql_connect, tags: mssql }
+  - { role: docker_tuleap, tags: docker_tuleap }
 
 - hosts: odoo_server
   gather_facts: no

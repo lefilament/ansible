@@ -19,3 +19,6 @@
 [submodule "roles/docker_privatebin"]
 	path = roles/docker_privatebin
 	url = git@github.com:lefilament/ansible_role_privatebin_docker.git
+[submodule "roles/docker_tuleap"]
+	path = roles/docker_tuleap
+	url = git@github.com:lefilament/ansible_role_tuleap_docker.git
