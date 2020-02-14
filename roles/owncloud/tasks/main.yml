@@ -109,6 +109,7 @@
     mode: 0700
     owner: root
     group: root
+  when: inventory_hostname in groups['maintenance_contract']
 
 - name: add cron job to perform backup
   cron:
@@ -117,6 +118,7 @@
     hour: 3
     weekday: 7
     job: /root/backup-owncloud.sh
+  when: inventory_hostname in groups['maintenance_contract']
 
 
 #--------------------------------------------------
