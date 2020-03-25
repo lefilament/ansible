@@ -36,6 +36,12 @@ NewHost3
 [docker_framadate]
 NewHost3
 
+[docker_mattermost]
+NewHost3
+
+[docker_gitlab]
+NewHost3
+
 [docker_privatebin]
 NewHost3
 

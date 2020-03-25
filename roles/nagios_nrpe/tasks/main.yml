@@ -348,6 +348,24 @@
   notify: restart nrpe
   tags: nrpe_config
 
+- name: add check docker gitlab
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_gitlab"
+    line: "command[check_docker_gitlab]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container gitlab.* --cpu 5:10 --memory 7:12:% --status running"
+  when: inventory_hostname in groups.docker_gitlab
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check docker mattermost
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_mattermost"
+    line: "command[check_docker_mattermost]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container mattermost.* --cpu 5:10 --memory 7:12:% --status running"
+  when: inventory_hostname in groups.docker_mattermost
+  notify: restart nrpe
+  tags: nrpe_config
+
 - name: add check docker privatebin
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg

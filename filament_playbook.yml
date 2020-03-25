@@ -60,6 +60,17 @@
   roles:
   - { role: docker_framadate, tags: docker_framadate }
 
+- hosts: docker_gitlab
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_gitlab, tags: docker_gitlab }
+
+- hosts: docker_mattermost
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_mattermost, tags: docker_mattermost }
 
 - hosts: docker_tuleap
   gather_facts: no

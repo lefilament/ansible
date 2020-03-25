@@ -20,8 +20,10 @@ odoo_db_test: "{{ SERVER_odoo_db_name_test }}"
 
 # Custom modules
 odoo_custom_modules:
- - lefilament_link_sale_project
- - lefilament_projets
+ - automatic_bank_statement_import
+ - lefilament_account
+ - lefilament_export_journal
+ - lefilament_generic_reports
 
 # OCA modules - these should be limited to the ones not already defined 
 # in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these

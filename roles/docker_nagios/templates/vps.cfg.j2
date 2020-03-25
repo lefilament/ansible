@@ -23,7 +23,7 @@ define host{
         use                     generic-host
         host_name               {{ host }} 
         alias                   {{ host }}
-        address                 {{ hostvars[host].ansible_ssh_host }}
+        address                 {{ hostvars[host].odoo_url }}
         }
 
 {% endfor %}
@@ -51,9 +51,15 @@ define hostgroup{
         }
 
 define hostgroup{
+        hostgroup_name  servers_docker_unsecured
+        alias           Serveurs Dockers peu Sécurisés
+        members         {{ groups['docker_unsecure'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        }
+
+define hostgroup{
         hostgroup_name  servers_docker_secured
-        alias           Serveurs Dockers
-        members         {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        alias           Serveurs Dockers Sécurisés
+        members         {{ groups['docker_secure'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         }
 
 
@@ -85,16 +91,9 @@ define service{
         }
 
 define service{
-        use                             hourly-service
-        host_name                       {{ groups['maintenance_contract'] | intersect(groups['odoo_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
-        service_description             Montage NFS
-        check_command                   check_nrpe!check_mountpoint
-        }
-
-define service{
         use                             daily-service
         host_name                       {{ groups['backup_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
-        service_description             Backup Odoo Servers
+        service_description             Backup Bluemind Servers
         check_command                   check_nrpe!check_newest_file_age
         }
 
@@ -258,6 +257,23 @@ define service{
         check_command                   check_nrpe!check_docker_framadate
         }
 
+# Docker Gitlab
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_gitlab'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Docker Tuleap
+        check_command                   check_nrpe!check_docker_gitlab
+        }
+
+
+# Docker Mattermost
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_mattermost'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Docker Mattermost
+        check_command                   check_nrpe!check_docker_mattermost
+        }
+
 # Docker PrivateBin
 define service{
         use                             generic-service,graphed-service
@@ -370,6 +386,7 @@ define service{
         service_description             Certificate OnlyOffice Server {{ hostvars[host].cloud_onlyoffice_url }}
         check_command                   check_certif!'{{ hostvars[host].cloud_onlyoffice_url }}'!443
         }
+
 {% endif %}
 {% endfor %}
 
@@ -389,6 +406,7 @@ define service{
         service_description             Certificate Nagios Server {{ hostvars[host].nagios_url }}
 	check_command			check_certif!'{{ hostvars[host].nagios_url }}'!443
         }
+
 {% endfor %}
 
 {% for host in groups['docker_etherpad'] | sort %}
@@ -423,6 +441,42 @@ define service{
         host_name                       {{ host }}
         service_description             Certificate Framadate Server {{ hostvars[host].date_url }}
         check_command                   check_certif!'{{ hostvars[host].date_url }}'!443
+        }
+
+{% endfor %}
+
+{% for host in groups['docker_gitlab'] | sort %}
+# {{ host }} Docker GitLab
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             GitLab Server {{ hostvars[host].git_url }}
+        check_command                   check_https!'{{ hostvars[host].git_url }}'!/
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate GitLab Server {{ hostvars[host].git_url }}
+        check_command                   check_certif!'{{ hostvars[host].git_url }}'!443
+        }
+
+{% endfor %}
+
+{% for host in groups['docker_mattermost'] | sort %}
+# {{ host }} Docker Mattermost
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             Mattermost Server {{ hostvars[host].mm_url }}
+        check_command                   check_https!'{{ hostvars[host].mm_url }}'!/
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate Mattermost Server {{ hostvars[host].mm_url }}
+        check_command                   check_certif!'{{ hostvars[host].mm_url }}'!443
         }
 
 {% endfor %}
@@ -512,3 +566,4 @@ define service{
         }
 
 {% endfor %}
+

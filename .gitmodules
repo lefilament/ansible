@@ -22,3 +22,9 @@
 [submodule "roles/docker_tuleap"]
 	path = roles/docker_tuleap
 	url = git@github.com:lefilament/ansible_role_tuleap_docker.git
+[submodule "roles/docker_mattermost"]
+	path = roles/docker_mattermost
+	url = https://github.com/lefilament/ansible_role_mattermost_docker
+[submodule "roles/docker_gitlab"]
+	path = roles/docker_gitlab
+	url = https://github.com/lefilament/ansible_role_gitlab_docker
