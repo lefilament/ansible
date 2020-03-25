@@ -161,8 +161,8 @@
 #--------------------------------------------------
 # AJOUT CUSTOM SCRIPTs
 #--------------------------------------------------
-- name: get custom scripts from bitbucket
-  git: repo="https://bitbucket.org/lefilament/nagios-plugin.git" dest="/usr/local/nagios/libexec/custom"
+- name: get custom scripts from gitlab
+  git: repo="https://sources.le-filament.com/lefilament/nagios-plugin.git" dest="/usr/local/nagios/libexec/custom"
   tags: nagios_config
 
 - name: set file rights on custom plugins
