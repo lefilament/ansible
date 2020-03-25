@@ -194,6 +194,16 @@
   notify: restart nrpe
   tags: nrpe_config
 
+# OpenStack odoo storage check
+- name: add check odoo storage
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_odoo_storage"
+    line: "command[check_odoo_storage]=/usr/local/nagios/libexec/custom-plugin/check_odoo_storage.sh"
+  when: inventory_hostname in groups.backup_server
+  notify: restart nrpe
+  tags: nrpe_config
+
 # Disk usage checks
 - name: modify plugin check hda1 in nrpe.cfg for physical servers - new config
   lineinfile:
@@ -379,7 +389,7 @@
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "check_docker_tuleap"
-    line: "command[check_docker_tuleap]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container tuleap.* --cpu 5:10 --memory 7:12:% --status running"
+    line: "command[check_docker_tuleap]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container tuleap.* --cpu 5:10 --memory 9:14:% --status running"
   when: inventory_hostname in groups.docker_tuleap
   notify: restart nrpe
   tags: nrpe_config
@@ -411,51 +421,13 @@
   notify: restart nrpe
   tags: nrpe_config
 
-# NFS mountpoints check
-- name: add plugin check mountpoints to verify that non-Docker Odoo backup dir is mounted
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_mountpoint"
-    line: "command[check_mountpoint]=/usr/local/nagios/libexec/custom-plugin/check_mountpoint.sh /mnt/backup-odoo"
-  when: inventory_hostname in groups.maintenance_contract | intersect(groups.odoo_server)
-  notify: restart nrpe
-  tags: nrpe_config
-
-# Backup server Odoo backups check
-- name: Check Odoo backups file age
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_newest_file_age"
-    line: "command[check_newest_file_age]=/usr/local/nagios/libexec/custom-plugin/check_newest_file_age.sh -V --base-dir /mnt/vdb/backup/ -d '{{ groups.maintenance_contract | intersect(groups.odoo_server) | join(' ') | lower }}'"
-  when: inventory_hostname in groups.backup_server
-  notify: restart nrpe
-  tags: nrpe_config
-
 # Running processes checks
-- name: add check processs nginx
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_procs_nginx"
-    line: "command[check_procs_nginx]=/usr/local/nagios/libexec/check_procs -w 5 -c 2: -C nginx"
-  when: inventory_hostname not in groups.bluemind_server|union(groups.log_server)
-  notify: restart nrpe
-  tags: nrpe_config
-
 - name: add check processs nginx
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "check_procs_nginx"
     line: "command[check_procs_nginx]=/usr/local/nagios/libexec/check_procs -w 13 -c 2: -C httpd"
   when: inventory_hostname in groups.log_server
-  notify: restart nrpe
-  tags: nrpe_config
-
-- name: add check processs nginx
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_procs_nginx"
-    line: "command[check_procs_nginx]=/usr/local/nagios/libexec/check_procs -w 13 -c 2: -C nginx"
-  when: inventory_hostname in groups.bluemind_server
   notify: restart nrpe
   tags: nrpe_config
 
@@ -477,57 +449,21 @@
   notify: restart nrpe
   tags: nrpe_config
 
-- name: modify procs number in nrpe.cfg for bluemind, and server with both odoo and owncloud
+- name: modify procs number in nrpe.cfg for server with both odoo and owncloud
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "check_total_procs"
     line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 225 -c 250
-  when: inventory_hostname in groups.bluemind_server | union(groups.owncloud_server) | union(groups.odoo_server)
+  when: inventory_hostname in groups.owncloud_server | union(groups.odoo_server)
   notify: restart nrpe
   tags: nrpe_config
 
-- name: modify procs number in nrpe.cfg for servers with odoo docker only
+- name: modify procs number in nrpe.cfg for servers docker
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "check_total_procs"
-    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 230 -c 250
-  when: inventory_hostname in groups.docker_odoo and inventory_hostname not in groups.docker_owncloud and inventory_hostname not in groups.docker_nextcloud
-  notify: restart nrpe
-  tags: nrpe_config
-
-- name: modify procs number in nrpe.cfg for servers with cloud docker only
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_total_procs"
-    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 210 -c 230
-  when: inventory_hostname not in groups.docker_odoo and inventory_hostname in groups.docker_owncloud | union(groups.docker_nextcloud)
-  notify: restart nrpe
-  tags: nrpe_config
-
-- name: modify procs number in nrpe.cfg for servers with odoo and cloud dockers but no auth docker
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_total_procs"
-    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 275 -c 300
-  when: inventory_hostname in groups.docker_odoo | intersect(groups.docker_owncloud | union(groups.docker_nextcloud)) and inventory_hostname not in groups.docker_auth
-  notify: restart nrpe
-  tags: nrpe_config
-    
-- name: modify procs number in nrpe.cfg for servers with odoo, cloud and auth dockers but nagios
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_total_procs"
-    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 320 -c 350
-  when: inventory_hostname in groups.docker_odoo | intersect(groups.docker_owncloud | union(groups.docker_nextcloud)) | intersect(groups.docker_auth) and inventory_hostname not in groups.docker_nagios
-  notify: restart nrpe
-  tags: nrpe_config
-
-- name: modify procs number in nrpe.cfg for servers with odoo, cloud, nagios and auth dockers
-  lineinfile:
-    name: /usr/local/nagios/etc/nrpe.cfg
-    regexp: "check_total_procs"
-    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w 450 -c 480
-  when: inventory_hostname in groups.docker_odoo | intersect(groups.docker_owncloud | union(groups.docker_nextcloud)) | intersect(groups.docker_auth) | intersect(groups.docker_nagios)
+    line: command[check_total_procs]=/usr/local/nagios/libexec/check_procs -w {{ ((group_names | length - 7) * 20 + 220) | int | abs }} -c {{ ((group_names | length - 7) * 20 + 250) | int | abs }}
+  when: inventory_hostname in groups.docker
   notify: restart nrpe
   tags: nrpe_config
 
@@ -536,5 +472,15 @@
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "check_procs_sshd"
     line: "command[check_procs_sshd]=/usr/local/nagios/libexec/check_procs -w 2 -c 1: -C sshd -a -D"
+  when: inventory_hostname not in groups.docker_gitlab
+  notify: restart nrpe
+  tags: nrpe_config
+
+- name: add check processs sshd
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_procs_sshd"
+    line: "command[check_procs_sshd]=/usr/local/nagios/libexec/check_procs -w 4 -c 2: -C sshd -a -D"
+  when: inventory_hostname in groups.docker_gitlab
   notify: restart nrpe
   tags: nrpe_config

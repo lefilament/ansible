@@ -34,20 +34,11 @@
               X11Forwarding no
   notify: restart-sshd
 
-- name: add nfs-server and pip package
+- name: add pip package
   apt:
-    name: ['nfs-kernel-server', 'python-pip', 'python-dev', 'python-setuptools', 'python-wheel']
+    name: ['python-pip', 'python-dev', 'python-setuptools', 'python-wheel']
     force: yes
     install_recommends: no
-
-- name: check that directories for mounting NFS for Odoo on Backup servers exist
-  file:
-    name: /mnt/vdb/backup/{{ hostvars[item].inventory_hostname|lower }}
-    state: directory
-    owner: lefilament
-    group: lefilament
-    mode: 0755
-  with_items: "{{ groups.maintenance_contract | intersect(groups.odoo_server) }}"
 
 - name: check that chroot directory for SFTP users exist
   file:
@@ -76,7 +67,7 @@
 
 - name: check that directory for collecting openstack Odoo facts exists
   file:
-    name: /mnt/vdb/backup/cloud
+    name: /mnt/vdb/backup/odoo
     state: directory
     owner: lefilament
     group: lefilament
@@ -89,15 +80,6 @@
     owner: lefilament
     group: lefilament
     mode: 0755
-
-- name: create NFS exports on Backup server
-  template:
-    src: exports.j2
-    dest: /etc/exports
-    owner: root
-    group: root
-    mode: 0644
-  notify: reload-nfs
 
 - name: install swift client
   pip:

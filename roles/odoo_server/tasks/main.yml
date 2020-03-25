@@ -26,7 +26,7 @@
 
 - name: Install tool packages
   apt: 
-    name: "['wget', 'git', 'bzr', 'bzrtools', 'python-pip', 'postgresql', 'postgresql-server-dev-all', 'python-all-dev', 'python-dev', 'python-pil', 'python-setuptools', 'libxml2-dev', 'libxslt1-dev', 'libevent-dev', 'libsasl2-dev', 'libldap2-dev', 'libffi-dev', 'pkg-config', 'libtiff5-dev', 'libjpeg8-dev', 'libjpeg-dev', 'zlib1g-dev', 'libfreetype6-dev', 'liblcms2-dev', 'liblcms2-utils', 'libwebp-dev', 'tcl8.6-dev', 'tk8.6-dev', 'python-tk', 'libyaml-dev', 'fontconfig', 'node-less', 'nodejs']"
+    name: "['wget', 'git', 'bzr', 'bzrtools', 'python-pip', 'postgresql', 'postgresql-server-dev-all', 'python-all-dev', 'python-dev', 'python-pil', 'python-setuptools', 'libxml2-dev', 'libxslt1-dev', 'libevent-dev', 'libsasl2-dev', 'libldap2-dev', 'libffi-dev', 'pkg-config', 'libtiff5-dev', 'libjpeg8-dev', 'libjpeg-dev', 'zlib1g-dev', 'libfreetype6-dev', 'liblcms2-dev', 'liblcms2-utils', 'libwebp-dev', 'tcl8.6-dev', 'tk8.6-dev', 'python-tk', 'libyaml-dev', 'fontconfig', 'node-less', 'nodejs', 'duplicity']"
     force: yes 
     install_recommends: no
   tags: preinstall
@@ -58,7 +58,7 @@
 
 - name: Install necessary python modules
   pip:
-    name: ['prettytable', 'cssselect', 'html2text', 'unidecode', 'pbr']
+    name: ['prettytable', 'cssselect', 'html2text', 'unidecode', 'pbr', 'python-swiftclient', 'python-keystoneclient']
   when: banking is defined
   tags: bank
 
@@ -238,7 +238,7 @@
   tags: certificate,proxy
 
 - name: install certbot for nginx
-  apt: name=python-certbot-nginx update_cache=yes force=yes install_recommends=no
+  apt: name=python3-certbot-nginx update_cache=yes force=yes install_recommends=no
   tags: certificate,proxy
 
 - name: install certificate
@@ -283,3 +283,22 @@
   notify: restart nginx
   tags: proxy
 
+#--------------------------------------------------
+# Backup Configuration
+#--------------------------------------------------
+- name: Backup script
+  template:
+    src: backup.sh.j2
+    dest: /root/backup-odoo.sh
+    mode: 0700
+    owner: root
+    group: root
+  when: inventory_hostname in groups['maintenance_contract']
+
+- name: add cron job to perform backup
+  cron:
+    name: Backup Odoo
+    minute: 45
+    hour: 1
+    job: /root/backup-odoo.sh
+  when: inventory_hostname in groups['maintenance_contract']

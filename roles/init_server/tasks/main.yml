@@ -164,23 +164,6 @@
       export TMOUT
   when: ansible_os_family == "RedHat"
 
-- name: add nfs package
-  apt:
-    name: nfs-common
-    force: yes
-    install_recommends: no
-  when: inventory_hostname not in groups.backup_server and ansible_os_family == "Debian" and inventory_hostname in (groups.maintenance_contract | union(groups.odoo_server)))
-
-- name: Mount NFS share on Odoo servers
-  mount: 
-    name: /mnt/backup-odoo
-    src: "{{ hostvars['Filament_Backup'].ansible_ssh_host }}:/mnt/vdb/backup/{{ inventory_hostname|lower }}"
-    fstype: nfs4
-    opts: rw,nosuid,noexec
-    state: mounted
-  when: inventory_hostname in groups.maintenance_contract | intersect(groups.odoo_server)
-
-
 - name: Copy Installed Package Listing script on server
   template:
     src: collect_installed_packages_facts_{{ ansible_os_family }}.sh.j2

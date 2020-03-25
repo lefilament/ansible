@@ -107,12 +107,6 @@ define servicegroup{
         }
 
 define servicegroup{
-        servicegroup_name       nfs-mount
-        alias                   Montage NFS
-        members                 {{ groups['maintenance_contract'] | intersect(groups['odoo_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Montage NFS,') }},Montage NFS
-        }
-
-define servicegroup{
         servicegroup_name       cpu-utilisation
         alias                   Utilisation CPU
         members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Charge CPU,') }},Charge CPU,TAS-Windows,Charge CPU
