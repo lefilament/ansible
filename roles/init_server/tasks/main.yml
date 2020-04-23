@@ -46,6 +46,8 @@
     group: "{{ host_user }}"
     password: "{{ host_password | password_hash('sha512', 65534 | random(seed=inventory_hostname) | string) }}"
     generate_ssh_key: yes
+    ssh_key_file: .ssh/id_ed25519
+    ssh_key_type: ed25519
     shell: /bin/bash
   register: publickey
 
@@ -57,7 +59,7 @@
     line: "host_user_public_key: {{ publickey.ssh_public_key }}"
   connection: local
   become: no
-  when: inventory_hostname not in groups.odoo_server and initial_playbook is not defined
+  when: initial_playbook is not defined
 
 - name: add user in sudoers
   lineinfile:
@@ -77,6 +79,67 @@
     name: /etc/ssh/sshd_config
     regexp: "^#?Port"
     line: "Port {{ default_sshd_port }}"
+  notify: restart-sshd
+  tags: sshd
+
+- name: support for ed25519 keys
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^#?HostKey /etc/ssh/ssh_host_ed25519_key"
+    line: "HostKey /etc/ssh/ssh_host_ed25519_key"
+  notify: restart-sshd
+  tags: sshd
+
+- name: fallback support for rsa keys
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    insertafter: "^#?HostKey /etc/ssh/ssh_host_ed25519_key"
+    line: "HostKey /etc/ssh/ssh_host_rsa_key"
+  notify: restart-sshd
+  when: inventory_hostname in groups.backup_server
+  tags: sshd
+
+- name: Kex Algorithms
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^#?KexAlgorithms "
+    insertafter: "^# Ciphers and keying"
+    line: "KexAlgorithms curve25519-sha256@libssh.org,ecdh-sha2-nistp521,ecdh-sha2-nistp384,ecdh-sha2-nistp256"
+  notify: restart-sshd
+  tags: sshd
+
+- name: Ciphers
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^#?Ciphers "
+    insertafter: "^KexAlgorithms"
+    line: "Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr"
+  notify: restart-sshd
+  tags: sshd
+
+- name: MACs
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^#?MACs "
+    insertafter: "^Cipher"
+    line: "MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com"
+  notify: restart-sshd
+  tags: sshd
+
+- name: Verbose Log Level
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^#?LogLevel "
+    line: "LogLevel VERBOSE"
+  notify: restart-sshd
+  tags: sshd
+
+- name: Authentication Methods
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^#?AuthenticationMethods "
+    insertafter: "^# Authentication:"
+    line: "AuthenticationMethods publickey"
   notify: restart-sshd
   tags: sshd
 
@@ -117,6 +180,14 @@
     name: /etc/ssh/sshd_config
     regexp: "^#?X11Forwarding"
     line: "X11Forwarding no"
+  notify: restart-sshd
+  tags: sshd
+
+- name: Add support for SFTP and logging
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^#?Subsystem.*sftp"
+    line: "Subsystem sftp /usr/lib/openssh/sftp-server -f AUTHPRIV -l INFO"
   notify: restart-sshd
   tags: sshd
 
