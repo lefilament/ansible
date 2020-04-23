@@ -261,7 +261,7 @@ define service{
 define service{
         use                             generic-service,graphed-service
         host_name                       {{ groups['docker_gitlab'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
-        service_description             Docker Tuleap
+        service_description             Docker GitLab
         check_command                   check_nrpe!check_docker_gitlab
         }
 
