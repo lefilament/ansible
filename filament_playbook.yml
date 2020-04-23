@@ -42,6 +42,12 @@
   roles:
   - { role: docker_owncloud, tags: docker_owncloud }
 
+- hosts: docker_drawio
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_drawio, tags: docker_drawio }
+
 - hosts: docker_etherpad
   gather_facts: no
   become: yes

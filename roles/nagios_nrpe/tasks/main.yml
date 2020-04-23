@@ -340,6 +340,15 @@
   notify: restart nrpe
   tags: nrpe_config
 
+- name: add check docker draw.io
+  lineinfile:
+    name: /usr/local/nagios/etc/nrpe.cfg
+    regexp: "check_docker_drawio"
+    line: "command[check_docker_drawio]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container drawio.* --cpu 5:10 --memory 7:12:% --status running"
+  when: inventory_hostname in groups.docker_drawio
+  notify: restart nrpe
+  tags: nrpe_config
+
 - name: add check docker etherpad
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg

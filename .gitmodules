@@ -28,3 +28,6 @@
 [submodule "roles/docker_gitlab"]
 	path = roles/docker_gitlab
 	url = https://github.com/lefilament/ansible_role_gitlab_docker
+[submodule "roles/docker_drawio"]
+	path = roles/docker_drawio
+	url = https://github.com/lefilament/ansible_role_drawio_docker

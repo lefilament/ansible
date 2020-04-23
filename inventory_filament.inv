@@ -30,6 +30,9 @@ NewHost3
 [docker_auth]
 NewHost2
 
+[docker_drawio]
+NewHost3
+
 [docker_etherpad]
 NewHost3
 
