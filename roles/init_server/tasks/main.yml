@@ -74,11 +74,28 @@
     exclusive: yes
   tags: sshd
 
+- name: make sure /etc/ssh/ssh_host_ed25519_key exists
+  stat:
+    path: /etc/ssh/ssh_host_ed25519_key
+  register: ssh_host_exists
+
+- name: Generate /etc/ssh/ssh_host_ed25519_key if missing
+  shell: ssh-keygen -A
+  when: not ssh_host_exists.stat.exists and not ansible_check_mode
+
 - name: configure sshd port
   lineinfile:
     name: /etc/ssh/sshd_config
     regexp: "^#?Port"
     line: "Port {{ default_sshd_port }}"
+  notify: restart-sshd
+  tags: sshd
+
+- name: disable support for rsa keys
+  lineinfile:
+    name: /etc/ssh/sshd_config
+    regexp: "^#?HostKey /etc/ssh/ssh_host_rsa_key"
+    line: "#HostKey /etc/ssh/ssh_host_rsa_key"
   notify: restart-sshd
   tags: sshd
 
@@ -88,15 +105,6 @@
     regexp: "^#?HostKey /etc/ssh/ssh_host_ed25519_key"
     line: "HostKey /etc/ssh/ssh_host_ed25519_key"
   notify: restart-sshd
-  tags: sshd
-
-- name: fallback support for rsa keys
-  lineinfile:
-    name: /etc/ssh/sshd_config
-    insertafter: "^#?HostKey /etc/ssh/ssh_host_ed25519_key"
-    line: "HostKey /etc/ssh/ssh_host_rsa_key"
-  notify: restart-sshd
-  when: inventory_hostname in groups.backup_server
   tags: sshd
 
 - name: Kex Algorithms

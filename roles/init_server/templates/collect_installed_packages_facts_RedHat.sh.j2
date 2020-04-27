@@ -18,7 +18,7 @@ pip list installed >> $file
 cp $file $latest_file
 chmod 644 $file $latest_file
 {% if inventory_hostname not in groups.backup_server %}
-sftp -P {{ ansible_ssh_port }} -o IdentityFile=/home/{{ host_user }}/.ssh/id_rsa {{ backup_sftp_user }}@{{ hostvars['Filament_Backup'].ansible_ssh_host }} << COMMANDS
+sftp -P {{ ansible_ssh_port }} -o IdentityFile=/home/{{ host_user }}/.ssh/id_ed25519 {{ backup_sftp_user }}@{{ hostvars['Server_Backup'].ansible_ssh_host }} << COMMANDS
 put $file {{ inventory_hostname|lower }}/
 quit
 COMMANDS
