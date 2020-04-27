@@ -51,7 +51,7 @@
 # Install Bank export module
 #--------------------------------------------------
 - name: Clone Weboob GIT repo
-  git: repo="https://git.weboob.org/weboob/devel.git" dest="/root/weboob" 
+  git: repo="https://git.weboob.org/weboob/weboob.git" version="master" dest="/root/weboob"
   when: banking is defined
   register: weboob
   tags: bank
@@ -83,39 +83,48 @@
   when: banking is defined
   tags: bank
 
-- name: add cron job to get bank accounts every day
-  cron: 
+- name: add cron job to get bank account every day
+  cron:
     name: import bank moves
     minute: 30
     hour: 20
-    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /ofx/bank_account_import.ofx ; chmod 444 /ofx/bank_account_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx | sed -n '/OFXHEADER/,$p' | sed 's/.*OFXHEADER/OFXHEADER/g' | sed 's/ACCTID>CPT/ACCTID>/g' > /ofx/bank_account_import.ofx ; chmod 444 /ofx/bank_account_import.ofx
   when: banking is defined
   tags: bank
 
-- name: add cron job to get bank accounts every day for account 2
-  cron: 
+- name: add cron job to get bank account 2 every day
+  cron:
     name: import bank moves account 2
     minute: 50
     hour: 20
-    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /OFX/bank_account2_import.ofx ; chmod 444 /ofx/bank_account2_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account2 }} `date -d "last week" +\%Y-\%m-\%d` -f ofx | sed -n '/OFXHEADER/,$p' | sed 's/.*OFXHEADER/OFXHEADER/g' | sed 's/ACCTID>CPT/ACCTID>/g' > /ofx/bank_account2_import.ofx ; chmod 444 /ofx/bank_account2_import.ofx
   when: banking is defined and bank_account2 is defined
   tags: bank
 
-- name: add cron job to get bank 2 accounts every day for bank 2
-  cron: 
+- name: add cron job to get bank account 3 every day
+  cron:
+    name: import bank moves account 3
+    minute: 10
+    hour: 21
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank_account3 }} `date -d "last week" +\%Y-\%m-\%d` -f ofx | sed -n '/OFXHEADER/,$p' | sed 's/.*OFXHEADER/OFXHEADER/g' | sed 's/ACCTID>CPT/ACCTID>/g' > /ofx/bank_account3_import.ofx ; chmod 444 /ofx/bank_account3_import.ofx
+  when: banking is defined and bank_account3 is defined
+  tags: bank
+
+- name: add cron job to get bank 2 account every day
+  cron:
     name: import bank 2 moves
     minute: 25
     hour: 20
-    job: /root/weboob/tools/local_run.sh boobank history {{ bank2_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx > /ofx/bank2_account_import.ofx ; chmod 444 /ofx/bank2_account_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank2_account }} `date -d "last week" +\%Y-\%m-\%d` -f ofx | sed -n '/OFXHEADER/,$p' | sed 's/.*OFXHEADER/OFXHEADER/g' | sed 's/ACCTID>CPT/ACCTID>/g' > /ofx/bank2_account_import.ofx ; chmod 444 /ofx/bank2_account_import.ofx
   when: banking is defined and bank2_account is defined
   tags: bank
 
-- name: add cron job to get bank 2 accounts every day for account 2
-  cron: 
+- name: add cron job to get bank 2 account 2 every day
+  cron:
     name: import bank 2 moves account 2
     minute: 45
     hour: 20
-    job: /root/weboob/tools/local_run.sh boobank history {{ bank2_account2 }} `date -d "last-week" +\%Y-\%m-\%d` -f ofx > /ofx/bank2_account2_import.ofx ; chmod 444 /ofx/bank2_account2_import.ofx
+    job: /root/weboob/tools/local_run.sh boobank history {{ bank2_account2 }} `date -d "last week" +\%Y-\%m-\%d` -f ofx | sed -n '/OFXHEADER/,$p' | sed 's/.*OFXHEADER/OFXHEADER/g' > /ofx/bank2_account2_import.ofx ; chmod 444 /ofx/bank2_account2_import.ofx
   when: banking is defined and bank2_account2 is defined
   tags: bank
 
