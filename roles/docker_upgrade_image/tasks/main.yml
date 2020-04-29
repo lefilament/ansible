@@ -73,7 +73,7 @@
   docker_image:
     name: filament/duplicity:mysql
     path: /home/docker/backups
-    dockerfile: Dockerfile-nextbak
+    dockerfile: Dockerfile-mysql
     force: yes
   when: inventory_hostname in groups.docker_nextcloud | intersect(groups.maintenance_contract)
   tags: upgrade_nextcloud, build_backup_nc
@@ -83,7 +83,7 @@
 # Odoo docker image
 - name: pull odoo docker image
   docker_image:
-    name: filament/odoo
+    name: filament/odoo:{{ odoo_image_tag | default(odoo_version) }}
     path: /home/docker/odootest/odoo
     force: yes
   when: inventory_hostname in groups.docker_odoo
@@ -106,7 +106,7 @@
   tags: upgrade_odoo_test, pull_mailhog
 
 # Whitelists
-- name: restart odoo docker whitelists
+- name: pull and restart odoo docker whitelists
   docker_service:
     project_src: /home/docker
     files: whitelists.yaml
@@ -140,7 +140,9 @@
 # Backups
 - name: rebuild backup-odoo docker
   docker_image:
-    name: tecnativa/duplicity:postgres
+    name: filament/duplicity:postgres
+    path: /home/docker/backups
+    dockerfile: Dockerfile-postgres
     force: yes
   when: inventory_hostname in groups.docker_odoo | intersect(groups.maintenance_contract)
   tags: upgrade_odoo_prod, pull_backup_odoo
@@ -164,7 +166,7 @@
   docker_image:
     name: filament/duplicity:mysql
     path: /home/docker/backups
-    dockerfile: Dockerfile-ownbak
+    dockerfile: Dockerfile-mysql
     force: yes
   when: inventory_hostname in groups.docker_owncloud | intersect(groups.maintenance_contract)
   tags: upgrade_owncloud, build_backup_oc
