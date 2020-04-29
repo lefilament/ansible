@@ -371,7 +371,7 @@
   lineinfile:
     name: /usr/local/nagios/etc/nrpe.cfg
     regexp: "check_docker_gitlab"
-    line: "command[check_docker_gitlab]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container gitlab.* --cpu 5:10 --memory 35:50:% --status running"
+    line: "command[check_docker_gitlab]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container gitlab.* --cpu 5:10 --memory 40:60:% --status running"
   when: inventory_hostname in groups.docker_gitlab
   notify: restart nrpe
   tags: nrpe_config
