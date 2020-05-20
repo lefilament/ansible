@@ -68,10 +68,8 @@
 -A OUTPUT -p udp -m udp --dport 67 -j ACCEPT
 # GPG
 -A OUTPUT -p udp -m udp --dport 11371 -j ACCEPT
-{% if inventory_hostname in groups.odoo_server %}
 # IMAP
 -A OUTPUT -p tcp -m tcp --dport 993 -j ACCEPT
-{% endif %}
 {% if inventory_hostname in groups.docker_nagios %}
 # NRPE
 -A OUTPUT -p tcp -m tcp --dport 5666 -j ACCEPT

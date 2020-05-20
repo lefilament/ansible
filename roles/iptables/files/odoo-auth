@@ -1,0 +1,2 @@
+[Definition]
+failregex = ^{"log":".+INFO.+: Login failed for db:\S+ login:<F-USER>\S+</F-USER> from <HOST>

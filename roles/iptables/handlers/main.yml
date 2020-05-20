@@ -9,3 +9,6 @@
 - name: restart docker
   service: name=docker state=restarted
   when: inventory_hostname in groups.docker
+
+- name: restart auditd
+  service: name=auditd state=restarted

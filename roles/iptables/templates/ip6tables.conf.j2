@@ -1,0 +1,20 @@
+*filter
+# Interdire toute connexion entrante et sortante
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+:LOGGING - [0:0]
+## INPUT chain
+# Autoriser loopback
+-A INPUT -i lo -j ACCEPT
+# Log incoming traffic blocked by IPTables
+-A INPUT -j LOGGING
+## OUTPUT chain
+# Autoriser loopback
+-A OUTPUT -o lo -j ACCEPT
+# Log outgoing traffic blocked by IPTables
+-A OUTPUT -j LOGGING
+## LOGGING chain
+-A LOGGING -m limit --limit 2/min -j LOG --log-prefix "IPTables6-Dropped: " --log-level 4
+-A LOGGING -j DROP
+COMMIT

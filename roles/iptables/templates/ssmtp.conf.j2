@@ -1,0 +1,12 @@
+#
+# Config file for sSMTP sendmail
+#
+root=
+
+mailhub={{ monitoring_mail_server }}:465
+hostname={{ inventory_hostname|lower }}
+FromLineOverride=YES
+UseTLS=yes
+AuthUser={{ monitoring_mail_user }}
+AuthPass={{ monitoring_mail_pass }}
+AuthMethod=LOGIN

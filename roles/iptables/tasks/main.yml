@@ -1,38 +1,59 @@
 ---
 
-- name: install mailutils
-  package: name=mailutils state=present
-  async: 120
-  poll: 10
-  when: ansible_os_family == "Debian" and not ansible_check_mode
+- name: remove mail packages not necessary
+  apt: 
+    name: [bsd-mailx mailutils postfix]
+    autoremove: yes
+    state: absent
+  when: ansible_os_family == "Debian"
 
-- name: check that mailutils is installed
-  package: name=mailutils state=present
-  when: ansible_os_family == "Debian" and ansible_check_mode
+- name: check that ssmtp is installed
+  package: name=ssmtp state=present
 
-- name: install mailx
-  package: name=mailx state=present
-  when: ansible_os_family == "RedHat"
+- name: install fail2ban and iptables-persistent
+  package: 
+    name:
+      - fail2ban
+      - iptables-persistent
+      - auditd
+    state: present
 
-- name: install fail2ban
-  package: name=fail2ban state=present
+- name: Check that sendmail redirects to ssmtp
+  file:
+    src: ssmtp
+    dest: /usr/sbin/sendmail
+    owner: root
+    group: mail
+    state: link
 
 - name: make fail2ban persistent
   service: name=fail2ban enabled=yes state=started
 
-- name: install iptables-persistent
-  package: name=iptables-persistent state=present
-
 - name: make sure netfilter-persistent is enabled
   service: name=netfilter-persistent enabled=yes state=started
 
-- name: push specific fail2ban configuration files
-  template: src={{ item }}.{{ ansible_distribution }}{{ ansible_distribution_major_version }}.j2 dest=/etc/fail2ban/{{ item }}.local
-  with_items:
-    - jail
-    - action.d/mail-whois
-    - action.d/mail-whois-lines
+- name: make sure auditd is enabled
+  service: name=auditd enabled=yes state=started
+
+- name: push specific fail2ban jail configuration file
+  template: src=jail.{{ ansible_distribution }}{{ ansible_distribution_major_version }}.j2 dest=/etc/fail2ban/jail.local
   when: ansible_os_family == "Debian"
+  notify: restart fail2ban
+
+- name: push specific fail2ban actions
+  template: src={{ item }}.j2 dest=/etc/fail2ban/{{ item }}.local
+  with_items:
+    - action.d/sendmail-common
+    - action.d/sendmail-whois-lines
+  when: ansible_os_family == "Debian"
+  notify: restart fail2ban
+
+- name: push specific fail2ban filters
+  copy: src={{ item }} dest=/etc/fail2ban/filter.d/{{ item }}.local
+  with_items:
+    - odoo-auth
+    - traefik-auth
+  when: inventory_hostname in groups.docker
   notify: restart fail2ban
 
 - name: create iptables configuration
@@ -41,3 +62,17 @@
     - restore-iptables
     - restart fail2ban
     - restart docker
+
+- name: create ip6tables configuration
+  template: src=ip6tables.conf.j2 dest=/etc/iptables/rules.v6 owner=root group=root mode=0600
+  notify: 
+    - restore-iptables
+    - restart fail2ban
+    - restart docker
+
+- name: configuration file for auditd
+  template: src=audit.rules.j2 dest=/etc/audit/rules.d/audit.rules owner=root group=root mode=0640
+  notify: restart auditd
+
+- name: configuration file for ssmtp
+  template: src=ssmtp.conf.j2 dest=/etc/ssmtp/ssmtp.conf owner=root group=mail mode=0640
