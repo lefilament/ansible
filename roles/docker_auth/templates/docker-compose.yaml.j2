@@ -25,14 +25,17 @@ services:
       LDAP_TLS_PROTOCOL_MIN: "3.1"
       LDAP_TLS_VERIFY_CLIENT: "demand"
       LDAP_REPLICATION: "false"
+      #LDAP_REPLICATION_CONFIG_SYNCPROV: "binddn="cn=admin,cn=config" bindmethod=simple credentials=$LDAP_CONFIG_PASSWORD searchbase="cn=config" type=refreshAndPersist retry="60 +" timeout=1 starttls=critical"
+      #LDAP_REPLICATION_DB_SYNCPROV: "binddn="cn=admin,$LDAP_BASE_DN" bindmethod=simple credentials=$LDAP_ADMIN_PASSWORD searchbase="$LDAP_BASE_DN" type=refreshAndPersist interval=00:00:00:10 retry="60 +" timeout=1 starttls=critical"
+      #LDAP_REPLICATION_HOSTS: "#PYTHON2BASH:['ldap://ldap.example.org','ldap://ldap2.example.org']"
       KEEP_EXISTING_CONFIG: "false"
       LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
       LDAP_SSL_HELPER_PREFIX: "ldap"
     tty: true
     stdin_open: true
     volumes:
-      - db:/var/lib/ldap
-      - config:/etc/ldap/slapd.d
+      - ldap_db:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
     domainname: "openldap" # important: same as hostname
     hostname: "openldap"
     networks:
@@ -57,19 +60,24 @@ services:
       traefik.http.services.ldap.loadbalancer.server.port: "80"
 
   sso:
-    build: sso
-    image: filament/lemonldap:1.9-debian
+    image: coudot/lemonldap-ng:latest
     container_name: sso
     extra_hosts:
     - "handler.{{ sso_url }}:127.0.0.1"
     restart: always
     volumes:
+    - lemonldap_etc_conf:/etc/lemonldap-ng
     - lemonldap_conf:/var/lib/lemonldap-ng/conf
     - lemonldap_sessions:/var/lib/lemonldap-ng/sessions
     - lemonldap_psessions:/var/lib/lemonldap-ng/psessions
+    environment:
+      SSODOMAIN: {{ sso_url }}
+      PORTAL_HOSTNAME: {{ sso_url }}
+      MANAGER_HOSTNAME: manager.{{ sso_url}}
+      HANDLER_HOSTNAME: handler.{{ sso_url }}
     labels:
       traefik.enable: "true"
-      traefik.http.routers.sso.rule: "Host(`manager.{{ sso_url }}`, `{{ sso_url }}`, `handler.{{ sso_url }}`{% if inventory_hostname in groups['docker_nagios'] %}, `{{ nagios_url }}`{% endif %})"
+      traefik.http.routers.sso.rule: "Host(`manager.{{ sso_url }}`, `{{ sso_url }}`, `handler.{{ sso_url }}`)"
       traefik.http.routers.sso.service: "sso"
       traefik.http.services.sso.loadbalancer.server.port: "80"
     networks:
@@ -85,8 +93,9 @@ networks:
         external: true
 
 volumes:
-    db:
-    config:
+    ldap_db:
+    ldap_config:
     lemonldap_conf:
+    lemonldap_etc_conf:
     lemonldap_sessions:
     lemonldap_psessions:

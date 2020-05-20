@@ -7,34 +7,6 @@
     group: root
 
 ## Install Auth docker
-- name: Install lemonldap source repo file
-  copy:
-    src: lemonldap-ng.list
-    dest: /home/docker/auth/sso/lemonldap-ng.list
-    owner: root
-    group: root
-    mode: 0400
-  notify: rebuild auth docker
-
-- name: Install Dockerfile for building lemonldap
-  template:
-    src: Dockerfile-sso.j2
-    dest: /home/docker/auth/sso/Dockerfile
-    owner: root
-    group: root
-    mode: 0400
-  notify: rebuild auth docker
-
-- name: Install nagios.conf for serving Nagios docker
-  template:
-    src: nagios.conf.apache2.j2
-    dest: /home/docker/auth/sso/nagios.conf
-    owner: root
-    group: root
-    mode: 0644
-  when: inventory_hostname in groups['docker_nagios']
-  notify: rebuild auth docker
-
 - name: Install Auth docker architecture
   template:
     src: docker-compose.yaml.j2

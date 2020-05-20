@@ -27,15 +27,16 @@ services:
         command:
             - /etc/periodic/daily/jobrunner
         volumes:
-            - auth_config:/mnt/backup/src/config:z
-            - auth_db:/mnt/backup/src/db:z
+            - auth_ldap_config:/mnt/backup/src/ldap_config:z
+            - auth_ldap_db:/mnt/backup/src/ldap_db:z
+            - auth_lemonldap_etc_conf:/mnt/backup/src/lemonldap_etc_conf:z
             - auth_lemonldap_conf:/mnt/backup/src/lemonldap_conf:z
             - /home/docker/backups/ldap_backup.ldif:/mnt/backup/src/ldap_backup.ldif:z
 
 volumes:
-    auth_config:
+    auth_ldap_config:
         external: true
-    auth_db:
+    auth_ldap_db:
         external: true
     auth_lemonldap_conf:
         external: true

@@ -11,11 +11,8 @@ services:
       - ./stylesheets:/opt/nagios/share/stylesheets/
       - ./apache2/:/etc/apache2/sites-enabled/
     networks:
-{% if inventory_hostname in groups.docker_auth %}
-      auth_default:
       public:
         ipv4_address: 192.168.239.2
-{% else %}
       inverseproxy_shared:
     labels:
       traefik.enable: "true"
@@ -23,18 +20,12 @@ services:
       traefik.http.routers.nagios.rule: "Host(`{{ nagios_url }}`)"
       traefik.http.routers.nagios.service: "nagios"
       traefik.http.services.nagios.loadbalancer.server.port: "80"
-{% endif %}
 
 networks:
-{% if inventory_hostname in groups.docker_auth %}
-    auth_default:
-        external: true
-    public:
-        ipam:
-            driver: default
-            config:
-              - subnet: "192.168.239.0/24"
-{% else %}
   inverseproxy_shared:
-        external: true
-{% endif %}
+    external: true
+  public:
+    ipam:
+      driver: default
+      config:
+        - subnet: "192.168.239.0/24"
