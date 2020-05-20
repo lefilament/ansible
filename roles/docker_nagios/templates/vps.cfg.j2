@@ -93,13 +93,6 @@ define service{
 define service{
         use                             daily-service
         host_name                       {{ groups['backup_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
-        service_description             Backup Bluemind Servers
-        check_command                   check_nrpe!check_newest_file_age
-        }
-
-define service{
-        use                             daily-service
-        host_name                       {{ groups['backup_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Backup Odoo Dockers
         check_command                   check_nrpe!check_odoo_storage
         }
@@ -241,6 +234,14 @@ define service{
         check_command                   check_nrpe!check_docker_cloud
         }
 
+# Docker Draw.io
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['docker_drawio'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        service_description             Docker DrawIo
+        check_command                   check_nrpe!check_docker_drawio
+        }
+
 # Docker Etherpad
 define service{
         use                             generic-service,graphed-service
@@ -264,7 +265,6 @@ define service{
         service_description             Docker GitLab
         check_command                   check_nrpe!check_docker_gitlab
         }
-
 
 # Docker Mattermost
 define service{
@@ -405,6 +405,24 @@ define service{
         host_name                       {{ host }}
         service_description             Certificate Nagios Server {{ hostvars[host].nagios_url }}
 	check_command			check_certif!'{{ hostvars[host].nagios_url }}'!443
+        }
+
+{% endfor %}
+
+{% for host in groups['docker_drawio'] | sort %}
+# {{ host }} Docker Draw.io
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             Draw.io Server {{ hostvars[host].drawio_url }}
+        check_command                   check_https!'{{ hostvars[host].drawio_url }}'!/
+        }
+
+define service{
+        use                             daily-service
+        host_name                       {{ host }}
+        service_description             Certificate Draw.io Server {{ hostvars[host].drawio_url }}
+        check_command                   check_certif!'{{ hostvars[host].drawio_url }}'!443
         }
 
 {% endfor %}
