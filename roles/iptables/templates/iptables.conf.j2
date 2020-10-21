@@ -3,7 +3,18 @@
 :INPUT DROP [0:0]
 :FORWARD DROP [0:0]
 :OUTPUT DROP [0:0]
+{% if inventory_hostname in groups.docker_elk %}
+:DOCKER-USER - [0:0]
+{% endif %}
 :LOGGING - [0:0]
+{% if inventory_hostname in groups.docker_elk %}
+## DOCKER-USER chain
+# Autoriser les logs entrants des serveurs en maintenance
+{% for host in groups.maintenance_contract %}
+-A DOCKER-USER -s {{ hostvars[host].ansible_ssh_host }} -p tcp -m tcp --dport {{ logstash_port }} -m state --state NEW,ESTABLISHED -j ACCEPT
+{% endfor %}
+-A DOCKER-USER -p tcp -m tcp --dport {{ logstash_port }} -j LOGGING
+{% endif %}
 ## INPUT chain
 # Ne pas casser les connexions etablies
 -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
@@ -68,8 +79,16 @@
 -A OUTPUT -p udp -m udp --dport 67 -j ACCEPT
 # GPG
 -A OUTPUT -p udp -m udp --dport 11371 -j ACCEPT
+{% if inventory_hostname in groups.maintenance_contract %}
+# Log Server
+{% for host in groups.docker_elk %}
+-A OUTPUT -d {{ hostvars[host].ansible_ssh_host }} -p tcp -m tcp --dport {{ logstash_port }} -j ACCEPT
+{% endfor %}
+{% endif %}
+{% if inventory_hostname in groups.odoo_server %}
 # IMAP
 -A OUTPUT -p tcp -m tcp --dport 993 -j ACCEPT
+{% endif %}
 {% if inventory_hostname in groups.docker_nagios %}
 # NRPE
 -A OUTPUT -p tcp -m tcp --dport 5666 -j ACCEPT

@@ -9,14 +9,25 @@
 
 - name: check that ssmtp is installed
   package: name=ssmtp state=present
-
-- name: install fail2ban and iptables-persistent
+- name: install fail2ban, iptables-persistent and auditd
   package: 
     name:
       - fail2ban
       - iptables-persistent
       - auditd
     state: present
+  async: 120
+  poll: 10
+  when: not ansible_check_mode
+
+- name: check presence of fail2ban, iptables-persistent and auditd packages
+  package: 
+    name:
+      - fail2ban
+      - iptables-persistent
+      - auditd
+    state: present
+  when: ansible_check_mode
 
 - name: Check that sendmail redirects to ssmtp
   file:
@@ -69,6 +80,13 @@
     - restore-iptables
     - restart fail2ban
     - restart docker
+
+- name: push iptables rsyslog configuration
+  copy: src=rsyslog.d-iptables dest=/etc/rsyslog.d/33-iptables.conf
+  notify: restart rsyslog
+
+- name: push iptables logrotate configuration
+  copy: src=logrotate.d-iptables dest=/etc/logrotate.d/iptables
 
 - name: configuration file for auditd
   template: src=audit.rules.j2 dest=/etc/audit/rules.d/audit.rules owner=root group=root mode=0640

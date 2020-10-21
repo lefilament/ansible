@@ -7,8 +7,8 @@
     install_recommends: no
   with_items:
     - gcc
-    - python-dev
-    - python-pip
+    - python3-dev
+    - python3-pip
     - postgresql
     - postgresql-server-dev-all
     - python-setuptools
@@ -106,7 +106,7 @@
   template:
     src: backup.sh.j2
     dest: /root/backup-owncloud.sh
-    mode: 0700
+    mode: '0700'
     owner: root
     group: root
   when: inventory_hostname in groups['maintenance_contract']
@@ -114,9 +114,9 @@
 - name: add cron job to perform backup
   cron:
     name: Backup Owncloud
-    minute: 45
-    hour: 3
-    weekday: 7
+    minute: "45"
+    hour: "3"
+    weekday: "7"
     job: /root/backup-owncloud.sh
   when: inventory_hostname in groups['maintenance_contract']
 
@@ -166,7 +166,7 @@
     path: "{{ item }}"
     owner: root
     group: www-data
-    mode: 0644
+    mode: '0644'
   with_items:
   - /var/www/owncloud/.htaccess
   - "{{ cloud_data_dir }}/.htaccess"

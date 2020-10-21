@@ -6,18 +6,18 @@
 TODAY=`date +%F`
 
 {% for host in groups['servers'] | difference(groups.backup_server) | sort %}
-if [ -f /mnt/vdb/backup/sftp/{{ host|lower }}/{{ host|lower }}.$TODAY ]
+if [ -f /backup/sftp/{{ host|lower }}/{{ host|lower }}.$TODAY ]
 then
-    mv /mnt/vdb/backup/sftp/{{ host|lower }}/{{ host|lower }}.$TODAY /mnt/vdb/backup/versions/
+    mv /backup/sftp/{{ host|lower }}/{{ host|lower }}.$TODAY /backup/versions/
 fi
 {% if host in groups['docker'] %}
-if [ -f /mnt/vdb/backup/sftp/{{ host|lower }}/{{ host|lower }}-docker.$TODAY ]
+if [ -f /backup/sftp/{{ host|lower }}/{{ host|lower }}-docker.$TODAY ]
 then
-    mv /mnt/vdb/backup/sftp/{{ host|lower }}/{{ host|lower }}-docker.$TODAY /mnt/vdb/backup/versions/
+    mv /backup/sftp/{{ host|lower }}/{{ host|lower }}-docker.$TODAY /backup/versions/
 fi
 {% endif %}
 {% endfor %}
 if [ -f /home/{{ host_user }}/versions/{{ inventory_hostname|lower }}.$TODAY ]
 then
-    cp -a /home/{{ host_user }}/versions/{{ inventory_hostname|lower }}.$TODAY /mnt/vdb/backup/versions/
+    cp -a /home/{{ host_user }}/versions/{{ inventory_hostname|lower }}.$TODAY /backup/versions/
 fi

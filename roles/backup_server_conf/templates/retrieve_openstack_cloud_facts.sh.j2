@@ -17,12 +17,12 @@ TODAY=`date +%F`
 
 for container in `/usr/local/bin/swift list`
 do
-    file="/mnt/vdb/backup/cloud/$container.$TODAY"
+    file="/backup/cloud/$container.$TODAY"
     printf "DATE = $TODAY"  > $file
     printf "\n\n-- STATS --\n" >>  $file
     /usr/local/bin/swift stat --lh $container >> $file
     printf "\n\n-- LIST FILES --\n" >> $file
     /usr/local/bin/swift list --lh $container >> $file
-    cp $file /mnt/vdb/backup/cloud/$container.latest
-    chmod 644 $file /mnt/vdb/backup/cloud/$container.latest
+    cp $file /backup/cloud/$container.latest
+    chmod 644 $file /backup/cloud/$container.latest
 done

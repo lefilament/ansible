@@ -5,8 +5,18 @@ ansible_ssh_host: "{{ SERVER_srv_ip }}"
 host_user: "{{ SERVER_srv_user }}"
 # User password
 host_password: "{{ SERVER_srv_pass }}"
-# Root password
-host_root_password: "{{ SERVER_srv_root_pass }}"
+# Admin User
+host_admin_user: "{{ SERVER_srv_admin_user }}"
+# Admin password
+host_admin_password: "{{ SERVER_srv_admin_pass }}"
+
+# OPTIONAL 2nd USER
+# host_user2: "{{ SERVER_srv_user2 }}"
+# host_password2: "{{ SERVER_srv_pass2 }}"
+# host_user2_pubkey: "{{ SERVER_srv_user2_pubkey }}"
+
+# password for proxy protected pages
+srv_proxy_pass: "{{ SERVER_srv_proxy_pass }}"
 
 ## SFTP user to connect to Backup server
 backup_sftp_user: "{{ SERVER_backup_sftp_user }}"

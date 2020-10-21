@@ -1,0 +1,12 @@
+Defaults        env_reset
+Defaults        mail_badpass
+Defaults        secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
+
+root    ALL=(ALL:ALL) ALL
+
+{% if host_admin_user != 'root' %}
+{{ host_admin_user }} ALL=(ALL) ALL
+{% endif %}
+
+{{ host_user }} ALL=(ALL) ALL
+{% if host_user2 is defined %}{{ host_user2 }} ALL=(ALL) ALL{% endif %}

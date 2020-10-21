@@ -189,7 +189,7 @@ define servicegroup{
 define servicegroup{
         servicegroup_name       ram-utilisation
         alias                   Utilisation RAM
-        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Charge RAM,') }},Charge RAM,TAS-Windows,Charge RAM
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | join(',Charge RAM,') }},Charge RAM
         }
 
 define servicegroup{

@@ -1,6 +1,8 @@
 ---
 
 ansible_ssh_user: "{{ host_user }}"
-ansible_sudo_pass: "{{ host_password }}"
+ansible_become_pass: "{{ host_password }}"
 default_sshd_port: 1022
 ansible_ssh_port: "{{ default_sshd_port }}"
+host_admin_user: root
+ansible_python_interpreter: /usr/bin/python3

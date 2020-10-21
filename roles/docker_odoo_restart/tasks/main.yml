@@ -6,7 +6,7 @@
   tags: rebuild_pull_test
 
 - name: rebuild odoo docker test
-  docker_service:
+  docker_compose:
     project_src: /home/docker/odootest/
     build: yes
     nocache: yes
@@ -19,14 +19,14 @@
   tags: rebuild_pull_test, rebuild_test
 
 - name: restart odoo docker test
-  docker_service:
+  docker_compose:
     project_src: /home/docker/odootest/
     remove_orphans: yes
     restarted: yes
   tags: restart_test
 
 - name: restart odoo docker whitelists
-  docker_service:
+  docker_compose:
     project_src: /home/docker
     files: whitelists.yaml
     project_name: whitelists
@@ -34,7 +34,7 @@
   tags: restart_whitelists
 
 - name: restart odoo docker prod
-  docker_service:
+  docker_compose:
     project_src: /home/docker/odoo/
     remove_orphans: yes
     restarted: yes

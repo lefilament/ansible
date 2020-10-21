@@ -1,7 +1,7 @@
 ---
 
 - name: restart nagios docker
-  docker_service:
+  docker_compose:
     project_src: /home/docker/nagios/
     restarted: yes
 

@@ -11,17 +11,17 @@ after = sendmail-common.local
 [Definition]
 
 # Option:  actionstart
-# Notes.:  command executed once at the start of Fail2Ban.
+# Notes.:  command executed on demand at the first ban (or at the start of Fail2Ban if actionstart_on_demand is set to false).
 # Values:  CMD
 #
 actionstart = printf %%b "Subject: [Fail2Ban] <name>: demarre sur {{ inventory_hostname | lower }}
               Date: `LC_ALL=C date +"%%a, %%d %%h %%Y %%T %%z"`
-              From: monitoring@le-filament.com
+              From: {{ monitoring_mail_user }}
               To: <dest>\n
               Bonjour,\n
               La cage <name> a été démarree.\n
               A+,\n
-              Fail2Ban" | /usr/sbin/sendmail -f monitoring@le-filament.com <dest>
+              Fail2Ban" | <mailcmd>
 
 # Option:  actionstop
 # Notes.:  command executed once at the end of Fail2Ban
@@ -29,12 +29,12 @@ actionstart = printf %%b "Subject: [Fail2Ban] <name>: demarre sur {{ inventory_h
 #
 actionstop = printf %%b "Subject: [Fail2Ban] <name>: arrete sur {{ inventory_hostname | lower }}
              Date: `LC_ALL=C date +"%%a, %%d %%h %%Y %%T %%z"`
-             From: monitoring@le-filament.com
+             From: {{ monitoring_mail_user }}
              To: <dest>\n
              Bonjour,\n
              La cage <name> a été stoppee.\n
              A+,\n
-             Fail2Ban" | /usr/sbin/sendmail -f monitoring@le-filament.com <dest>
+             Fail2Ban" | <mailcmd>
 
 # Option:  actioncheck
 # Notes.:  command executed once before each actionban command
@@ -59,6 +59,10 @@ actionban =
 actionunban =
 
 [Init]
+
+# Your system mail command
+#
+mailcmd = /usr/sbin/sendmail -f "{{ monitoring_mail_user }}" "<dest>"
 
 # Recipient mail address
 #

@@ -1,3 +1,32 @@
+#
+# WARNING: heavily refactored in 0.9.0 release.  Please review and
+#          customize settings for your setup.
+#
+# Changes:  in most of the cases you should not modify this
+#           file, but provide customizations in jail.local file,
+#           or separate .conf files under jail.d/ directory, e.g.:
+#
+# HOW TO ACTIVATE JAILS:
+#
+# YOU SHOULD NOT MODIFY THIS FILE.
+#
+# It will probably be overwritten or improved in a distribution update.
+#
+# Provide customizations in a jail.local file or a jail.d/customisation.local.
+# For example to change the default bantime for all jails and to enable the
+# ssh-iptables jail the following (uncommented) would appear in the .local file.
+# See man 5 jail.conf for details.
+#
+# [DEFAULT]
+# bantime = 1h
+#
+# [sshd]
+# enabled = true
+#
+# See jail.conf(5) man page for more information
+
+
+
 # Comments: use '#' for comment lines and ';' (following a space) for inline comments
 
 
@@ -14,14 +43,52 @@ before = paths-debian.conf
 # MISCELLANEOUS OPTIONS
 #
 
-# "ignorself" specifies whether the local resp. own IP addresses should be ignored
+# "bantime.increment" allows to use database for searching of previously banned ip's to increase a 
+# default ban time using special formula, default it is banTime * 1, 2, 4, 8, 16, 32...
+#bantime.increment = true
+
+# "bantime.rndtime" is the max number of seconds using for mixing with random time 
+# to prevent "clever" botnets calculate exact time IP can be unbanned again:
+#bantime.rndtime = 
+
+# "bantime.maxtime" is the max number of seconds using the ban time can reach (don't grows further)
+#bantime.maxtime = 
+
+# "bantime.factor" is a coefficient to calculate exponent growing of the formula or common multiplier,
+# default value of factor is 1 and with default value of formula, the ban time 
+# grows by 1, 2, 4, 8, 16 ...
+#bantime.factor = 1
+
+# "bantime.formula" used by default to calculate next value of ban time, default value bellow,
+# the same ban time growing will be reached by multipliers 1, 2, 4, 8, 16, 32...
+#bantime.formula = ban.Time * (1<<(ban.Count if ban.Count<20 else 20)) * banFactor
+#
+# more aggressive example of formula has the same values only for factor "2.0 / 2.885385" :
+#bantime.formula = ban.Time * math.exp(float(ban.Count+1)*banFactor)/math.exp(1*banFactor)
+
+# "bantime.multipliers" used to calculate next value of ban time instead of formula, coresponding 
+# previously ban count and given "bantime.factor" (for multipliers default is 1);
+# following example grows ban time by 1, 2, 4, 8, 16 ... and if last ban count greater as multipliers count, 
+# always used last multiplier (64 in example), for factor '1' and original ban time 600 - 10.6 hours
+#bantime.multipliers = 1 2 4 8 16 32 64
+# following example can be used for small initial ban time (bantime=60) - it grows more aggressive at begin,
+# for bantime=60 the multipliers are minutes and equal: 1 min, 5 min, 30 min, 1 hour, 5 hour, 12 hour, 1 day, 2 day
+#bantime.multipliers = 1 5 30 60 300 720 1440 2880
+
+# "bantime.overalljails" (if true) specifies the search of IP in the database will be executed 
+# cross over all jails, if false (dafault), only current jail of the ban IP will be searched
+#bantime.overalljails = false
+
+# --------------------
+
+# "ignoreself" specifies whether the local resp. own IP addresses should be ignored
 # (default is true). Fail2ban will not ban a host which matches such addresses.
-#ignorself = true
+#ignoreself = true
 
 # "ignoreip" can be a list of IP addresses, CIDR masks or DNS hosts. Fail2ban
 # will not ban a host which matches an address in this list. Several addresses
 # can be defined using space (and/or comma) separator.
-ignoreip = 127.0.0.1/8{% if inventory_hostname in groups.docker %} 172.16.0.0/12 192.168.0.0/16{% endif %}
+ignoreip = 127.0.0.1/8{% if inventory_hostname in groups.docker %} 172.16.0.0/12 192.168.0.0/16{% endif %}{% for host in groups.docker_nagios %} {{ hostvars[host].ansible_ssh_host }}/32{% endfor %}
 
 # External command that will take an tagged arguments to ignore, e.g. <ip>,
 # and return true if the IP is to be ignored. False otherwise.
@@ -38,6 +105,9 @@ findtime  = 3600 ; search for 1 hour
 
 # "maxretry" is the number of failures before a host get banned.
 maxretry = 3
+
+# "maxmatches" is the number of matches stored in ticket (resolvable via tag <matches> in actions).
+maxmatches = %(maxretry)s
 
 # "backend" specifies the backend used to get files modification.
 # Available options are "pyinotify", "gamin", "polling", "systemd" and "auto".
@@ -147,19 +217,19 @@ action_mw = %(banaction)s[name=%(__name__)s, bantime="%(bantime)s", port="%(port
 # ban & send an e-mail with whois report and relevant log lines
 # to the destemail.
 action_mwl = %(banaction)s[name=%(__name__)s, bantime="%(bantime)s", port="%(port)s", protocol="%(protocol)s", chain="%(chain)s"]
-             %(mta)s-whois-lines[name=%(__name__)s, sender="%(sender)s", dest="%(destemail)s", logpath=%(logpath)s, chain="%(chain)s"]
+             %(mta)s-whois-lines[name=%(__name__)s, sender="%(sender)s", dest="%(destemail)s", logpath="%(logpath)s", chain="%(chain)s"]
 
 # See the IMPORTANT note in action.d/xarf-login-attack for when to use this action
 #
 # ban & send a xarf e-mail to abuse contact of IP address and include relevant log lines
 # to the destemail.
 action_xarf = %(banaction)s[name=%(__name__)s, bantime="%(bantime)s", port="%(port)s", protocol="%(protocol)s", chain="%(chain)s"]
-             xarf-login-attack[service=%(__name__)s, sender="%(sender)s", logpath=%(logpath)s, port="%(port)s"]
+             xarf-login-attack[service=%(__name__)s, sender="%(sender)s", logpath="%(logpath)s", port="%(port)s"]
 
 # ban IP on CloudFlare & send an e-mail with whois report and relevant log lines
 # to the destemail.
 action_cf_mwl = cloudflare[cfuser="%(cfemail)s", cftoken="%(cfapikey)s"]
-                %(mta)s-whois-lines[name=%(__name__)s, sender="%(sender)s", dest="%(destemail)s", logpath=%(logpath)s, chain="%(chain)s"]
+                %(mta)s-whois-lines[name=%(__name__)s, sender="%(sender)s", dest="%(destemail)s", logpath="%(logpath)s", chain="%(chain)s"]
 
 # Report block via blocklist.de fail2ban reporting service API
 # 

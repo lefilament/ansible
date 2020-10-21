@@ -2,7 +2,7 @@
 
 ## Proxy
 - name: restart proxy dockers
-  docker_service:
+  docker_compose:
     project_src: /home/docker/inverseproxy
     pull: yes
   when: inventory_hostname in groups.docker
@@ -37,7 +37,7 @@
 
 # Auth
 - name: restart auth dockers
-  docker_service:
+  docker_compose:
     project_src: /home/docker/auth
   when: inventory_hostname in groups.docker_auth
   tags: upgrade_auth
@@ -45,7 +45,7 @@
 # Nagios images
 # Nagios
 - name: pull nagios docker image
-  docker_service:
+  docker_compose:
     project_src: /home/docker/nagios/
     pull: yes
   when: inventory_hostname in groups.docker_nagios
@@ -55,7 +55,7 @@
 ## NextCloud images
 # Nextcloud
 - name: pull nextcloud docker images
-  docker_service:
+  docker_compose:
     project_src: /home/docker/
     files: nextcloud.yaml
     project_name: nextcloud
@@ -107,7 +107,7 @@
 
 # Whitelists
 - name: pull and restart odoo docker whitelists
-  docker_service:
+  docker_compose:
     project_src: /home/docker
     files: whitelists.yaml
     project_name: whitelists
@@ -117,7 +117,7 @@
 
 # Odoo test
 - name: restart odoo test dockers
-  docker_service:
+  docker_compose:
     project_src: /home/docker/odootest
   when: inventory_hostname in groups.docker_odoo
   tags: upgrade_odoo_test
@@ -132,7 +132,7 @@
 
 # Odoo prod
 - name: restart odoo prod dockers
-  docker_service:
+  docker_compose:
     project_src: /home/docker/odoo
   when: inventory_hostname in groups.docker_odoo
   tags: upgrade_odoo_prod
@@ -140,9 +140,7 @@
 # Backups
 - name: rebuild backup-odoo docker
   docker_image:
-    name: filament/duplicity:postgres
-    path: /home/docker/backups
-    dockerfile: Dockerfile-postgres
+    name: tecnativa/duplicity:postgres
     force: yes
   when: inventory_hostname in groups.docker_odoo | intersect(groups.maintenance_contract)
   tags: upgrade_odoo_prod, pull_backup_odoo
@@ -151,7 +149,7 @@
 ## Owncloud images
 # Owncloud docker image
 - name: pull owncloud docker images
-  docker_service:
+  docker_compose:
     project_src: /home/docker/
     files: owncloud.yaml
     project_name: owncloud

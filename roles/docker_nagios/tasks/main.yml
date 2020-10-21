@@ -5,25 +5,25 @@
   file:
     name: "{{ item }}"
     state: directory
-    owner: 999
-    group: 1000
+    owner: '999'
+    group: '1000'
   with_items:
   - /home/docker/nagios/custom
   - /home/docker/nagios/etc/objects
   - /home/docker/nagios/stylesheets
 
-- name: Install nagios docker
+- name: Copy nagios docker-compose file
   template:
     src: nagios.yaml.j2
     dest: /home/docker/nagios/docker-compose.yaml
-    mode: 0644 
+    mode: '0644'
   notify: restart nagios docker
 
 - name: get ssl certificate verification module from github
   get_url:
-    url: https://raw.githubusercontent.com/matteocorti/check_ssl_cert/v1.56.0/check_ssl_cert
+    url: https://raw.githubusercontent.com/matteocorti/check_ssl_cert/master/check_ssl_cert
     dest: /home/docker/nagios/custom/check_ssl_cert
-    mode: 0555
+    mode: '0555'
   notify: restart nagios docker
   tags: nagios_config
 
@@ -31,9 +31,9 @@
   copy:
     src: "{{ item }}"
     dest: /home/docker/nagios/etc/{{ item }}
-    mode: 0644
-    owner: 999
-    group: 1000
+    mode: '0644'
+    owner: '999'
+    group: '1000'
   with_items:
     - cgi.cfg
     - nagios.cfg
@@ -45,9 +45,9 @@
   copy:
     src: "roles/nagios/files/{{ item }}"
     dest: /home/docker/nagios/stylesheets/{{ item }}
-    mode: 0644
-    owner: 999
-    group: 1000
+    mode: '0644'
+    owner: '999'
+    group: '1000'
   with_items:
     - avail.css
     - checksanity.css
@@ -75,13 +75,13 @@
   notify: restart nagios docker
   tags: nagios_config
 
-- name: install objects configuration files
+- name: copy objects configuration files
   template:
     src: "{{ item }}.j2"
     dest: /home/docker/nagios/etc/objects/{{ item }}
-    mode: 0644
-    owner: 999
-    group: 1000
+    mode: '0644'
+    owner: '999'
+    group: '1000'
   with_items:
     - vps.cfg
     - localhost.cfg
@@ -101,13 +101,7 @@
   copy:
     src: "{{ item }}"
     dest: /home/docker/nagios/apache2/{{ item }}
-    mode: 0644
+    mode: '0644'
   with_items:
     - 000-default.conf
     - nagios.conf
-
-- name: start nagios docker
-  docker_service:
-    project_src: /home/docker/nagios/
-  tags: start_docker
-

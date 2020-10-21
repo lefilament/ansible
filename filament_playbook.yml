@@ -4,6 +4,7 @@
   become: yes
   roles:
   - { role: init_server, tags: init }
+  - { role: iptables, tags: iptables }
 
 - hosts: backup_server
   gather_facts: no
@@ -48,17 +49,17 @@
   roles:
   - { role: docker_drawio, tags: docker_drawio }
 
+- hosts: docker_elk
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_elk, tags: docker_elk }
+
 - hosts: docker_etherpad
   gather_facts: no
   become: yes
   roles:
   - { role: docker_etherpad, tags: docker_etherpad }
-
-- hosts: docker_privatebin
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: docker_privatebin, tags: docker_privatebin }
 
 - hosts: docker_framadate
   gather_facts: no
@@ -78,6 +79,12 @@
   roles:
   - { role: docker_mattermost, tags: docker_mattermost }
 
+- hosts: docker_privatebin
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_privatebin, tags: docker_privatebin }
+
 - hosts: docker_tuleap
   gather_facts: no
   become: yes
@@ -96,23 +103,23 @@
   roles:
   - { role: owncloud, tags: owncloud } 
 
-- hosts: all
+- hosts: maintenance_contract
   gather_facts: no
   become: yes
   roles:
-  - { role: iptables, tags: iptables }
-
-- hosts: all 
-  gather_facts: no
-  become: yes
-  roles: 
-  - { role: nagios_nrpe, tags: nrpe }
+    - { role: filebeat, tags: filebeat }
 
 - hosts: nagios_server
   gather_facts: no
   become: yes
   roles:
   - { role: nagios, tags: nagios }
+
+- hosts: all 
+  gather_facts: no
+  become: yes
+  roles: 
+  - { role: nagios_nrpe, tags: nrpe }
 
 - hosts: docker_nagios
   gather_facts: no

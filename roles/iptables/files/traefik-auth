@@ -1,2 +1,2 @@
 [Definition]
-failregex = ^{"log":"<HOST> - .+ \\"(GET|POST|HEAD) .+\\" 401 .+$
+failregex = ^<HOST> - .+ "(GET|POST|HEAD) .+" 401 .+$

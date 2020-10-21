@@ -54,7 +54,7 @@ define command{
 # 'check-host-alive' command definition
 define command{
         command_name    check-host-alive
-        command_line    $USER1$/check_ping -H $HOSTADDRESS$ -w 3000.0,80% -c 5000.0,100% -p 5
+        command_line    $USER1$/check_ping -H $HOSTADDRESS$ -w 100.0,20% -c 500.0,60% -p 5
         }
 
 
@@ -281,7 +281,7 @@ define command {
 # check_nrpe_win 
 define command {
         command_name    check_nrpe_win
-        command_line    $USER1$/check_nrpe -2 -P 8192 -H $HOSTADDRESS$ -c $ARG1$ $ARG2$
+        command_line    $USER1$/check_nrpe -H $HOSTADDRESS$ -c $ARG1$ $ARG2$
 }
 
 # check_fail2ban

@@ -1,3 +1,8 @@
+[servers:children]
+vps_server
+physical_server
+dedicated_server
+
 [physical_server]
 NewHost1
 

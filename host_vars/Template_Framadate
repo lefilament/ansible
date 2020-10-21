@@ -1,13 +1,13 @@
 ## Framadate configuration
 # Framadate URL
-date_url: "{{ lf_date_url }}"
+date_url: "{{ SERVER_date_url }}"
 # Framadate DB
-date_db_root: "{{ lf_date_db_root }}"
-date_db_user: "{{ lf_date_db_user }}"
-date_db_pass: "{{ lf_date_db_pass }}"
+date_db_root: "{{ SERVER_date_db_root }}"
+date_db_user: "{{ SERVER_date_db_user }}"
+date_db_pass: "{{ SERVER_date_db_pass }}"
 # Framadate Admin Password
-date_admin_user: "{{ lf_date_admin_user }}"
-date_admin_pass: "{{ lf_date_admin_pass }}"
+date_admin_user: "{{ SERVER_date_admin_user }}"
+date_admin_pass: "{{ SERVER_date_admin_pass }}"
 
 
 ## Mail server configuration - for Framadate

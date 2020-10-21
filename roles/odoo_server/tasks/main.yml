@@ -26,7 +26,7 @@
 
 - name: Install tool packages
   apt: 
-    name: "['wget', 'git', 'bzr', 'bzrtools', 'python-pip', 'postgresql', 'postgresql-server-dev-all', 'python-all-dev', 'python-dev', 'python-pil', 'python-setuptools', 'libxml2-dev', 'libxslt1-dev', 'libevent-dev', 'libsasl2-dev', 'libldap2-dev', 'libffi-dev', 'pkg-config', 'libtiff5-dev', 'libjpeg8-dev', 'libjpeg-dev', 'zlib1g-dev', 'libfreetype6-dev', 'liblcms2-dev', 'liblcms2-utils', 'libwebp-dev', 'tcl8.6-dev', 'tk8.6-dev', 'python-tk', 'libyaml-dev', 'fontconfig', 'node-less', 'nodejs', 'duplicity']"
+    name: ['wget', 'git', 'bzr', 'bzrtools', 'python-pip', 'postgresql', 'postgresql-server-dev-all', 'python-all-dev', 'python-dev', 'python-pil', 'python-setuptools', 'libxml2-dev', 'libxslt1-dev', 'libevent-dev', 'libsasl2-dev', 'libldap2-dev', 'libffi-dev', 'pkg-config', 'libtiff5-dev', 'libjpeg8-dev', 'libjpeg-dev', 'zlib1g-dev', 'libfreetype6-dev', 'liblcms2-dev', 'liblcms2-utils', 'libwebp-dev', 'tcl8.6-dev', 'tk8.6-dev', 'python-tk', 'libyaml-dev', 'fontconfig', 'node-less', 'nodejs', 'duplicity']
     force: yes 
     install_recommends: no
   tags: preinstall
