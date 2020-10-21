@@ -163,7 +163,7 @@ define servicegroup{
 define servicegroup{
         servicegroup_name       docker_odoo
         alias                   Odoo Dockers
-        members                 {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo,') }},Docker Odoo,{{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo Test,') }},Docker Odoo Test,{{ groups['docker_odoo'] | intersect(groups['docker_secure']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo Whitelists,') }},Docker Odoo Whitelists
+        members                 {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo,') }},Docker Odoo,{{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo Test,') }},Docker Odoo Test,{{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo Whitelists,') }},Docker Odoo Whitelists
         }
 
 define servicegroup{

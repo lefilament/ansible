@@ -55,15 +55,9 @@ define hostgroup{
         }
 
 define hostgroup{
-        hostgroup_name  servers_docker_unsecured
-        alias           Serveurs Dockers peu Sécurisés
-        members         {{ groups['docker_unsecure'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
-        }
-
-define hostgroup{
-        hostgroup_name  servers_docker_secured
-        alias           Serveurs Dockers Sécurisés
-        members         {{ groups['docker_secure'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        hostgroup_name  servers_docker
+        alias           Serveurs Dockers
+        members         {{ groups['docker'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         }
 
 
@@ -229,7 +223,7 @@ define service{
 # Docker Odoo Whitelists
 define service{
         use                             generic-service,graphed-service
-        host_name                       {{ groups['docker_odoo'] | intersect(groups['docker_secure']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
+        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Docker Odoo Whitelists
         check_command                   check_nrpe!check_docker_whitelists
         }

@@ -112,7 +112,7 @@
     files: whitelists.yaml
     project_name: whitelists
     pull: yes
-  when: inventory_hostname in groups.docker_odoo | intersect(groups.docker_secure)
+  when: inventory_hostname in groups.docker_odoo 
   tags: upgrade_odoo_test, pull_whitelists
 
 # Odoo test

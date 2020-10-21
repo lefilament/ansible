@@ -88,9 +88,7 @@ command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker
 {% if inventory_hostname in groups.docker_odoo %}
 command[check_docker_odoo]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container odoo_.* --cpu 10:15 --memory 35:45:% --status running
 command[check_docker_odoo_test]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container testodoo.* --cpu 10:15 --memory 20:25:% --status running
-{% if inventory_hostname in groups.docker_secure %}
 command[check_docker_whitelists]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container whitelists.* --cpu 5:10 --memory 5:7:% --status running
-{% endif %}
 {% endif %}
 {% if inventory_hostname in groups.docker_owncloud %}
 {% if inventory_hostname in groups.docker_odoo %}
