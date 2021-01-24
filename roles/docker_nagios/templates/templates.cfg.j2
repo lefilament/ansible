@@ -5,7 +5,7 @@
 # NOTES: This config file provides you with some example object definition
 #        templates that are refered by other host, service, contact, etc.
 #        definitions in other config files.
-#       
+#
 #        You don't need to keep these definitions in a separate file from your
 #        other object definitions.  This has been done just to make things
 #        easier to understand.
@@ -133,7 +133,7 @@ define servicegroup{
 define servicegroup{
         servicegroup_name       services
         alias                   Services
-        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',SSHD Service,') }},SSHD Service,{{ groups['odoo_server'] | union(groups['owncloud_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Nginx Service,') }},Nginx Service,{{ groups['odoo_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Odoo Service,') }},Odoo Service,{{ groups['owncloud_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Owncloud Service,') }},Owncloud Service,{{ groups['maintenance_contract'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Filebeat Service,') }},Filebeat Service,{{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Services en cours,') }},Services en cours,Nagios Server,Nagios Service
+        members                 {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',SSHD Service,') }},SSHD Service,{{ groups['odoo_server'] | union(groups['owncloud_server']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Nginx Service,') }},Nginx Service,{{ groups['odoo_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Odoo Service,') }},Odoo Service,{{ groups['owncloud_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Owncloud Service,') }},Owncloud Service,{{ groups['full_maintenance'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Filebeat Service,') }},Filebeat Service,{{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Services en cours,') }},Services en cours,Nagios Server,Nagios Service
         }
 
 define servicegroup{
@@ -163,7 +163,7 @@ define servicegroup{
 define servicegroup{
         servicegroup_name       docker_odoo
         alias                   Odoo Dockers
-        members                 {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo,') }},Docker Odoo,{{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo Test,') }},Docker Odoo Test,{{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo Whitelists,') }},Docker Odoo Whitelists
+        members                 {% for host in groups['docker_odoo'] | sort %}{% if hostvars[host].odoo_prod is defined %}{{ host }},Docker Odoo,{% endif %}{% for instance in hostvars[host].odoo_nonprod_instances | default([]) %}{{ host }},Docker {{ instance.name }},{% endfor %}{% endfor %}{{ groups['docker_odoo'] | intersect(groups['docker_secure']) | map('extract', hostvars, ['inventory_hostname']) | sort | join(',Docker Odoo Whitelists,') }},Docker Odoo Whitelists
         }
 
 define servicegroup{
@@ -204,7 +204,7 @@ define service{
 
 define service{
         name                            daily-service
-        use                             generic-service         
+        use                             generic-service
         servicegroups                   certificates
         max_check_attempts              2
         check_interval                  1440
@@ -217,7 +217,7 @@ define service{
 
 define service{
         name                            hourly-service
-        use                             generic-service         
+        use                             generic-service
         max_check_attempts              2
         check_interval                  60
         retry_interval                  5

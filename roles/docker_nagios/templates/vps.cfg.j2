@@ -10,8 +10,8 @@
 {% for host in groups['all'] | difference(groups['physical_server']) | sort %}
 {% if host != inventory_hostname %}
 define host{
-        use                     linux-server            
-        host_name               {{ host }} 
+        use                     linux-server
+        host_name               {{ host }}
         alias                   {{ host }}
         address                 {{ hostvars[host].ansible_ssh_host }}
         }
@@ -21,7 +21,7 @@ define host{
 {% for host in groups['physical_server'] | sort %}
 define host{
         use                     generic-host
-        host_name               {{ host }} 
+        host_name               {{ host }}
         alias                   {{ host }}
 {% if hostvars[host].odoo_prod is defined %}
         address                 {{ hostvars[host].odoo_prod.url }}
@@ -32,8 +32,8 @@ define host{
 
 {% endfor %}
 define host{
-        use                     linux-server            
-        host_name               {{ inventory_hostname }} 
+        use                     linux-server
+        host_name               {{ inventory_hostname }}
         alias                   {{ inventory_hostname }}
         address                 192.168.239.1
         }
@@ -83,12 +83,25 @@ define service{
 # on the local machine.
 
 define service{
-        use                             generic-service,graphed-service 
+        use                             generic-service,graphed-service
         host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
         service_description             Espace Disque
         check_command                   check_nrpe!check_hda1
         }
 
+{% for host in groups['all'] | sort %}
+{% if hostvars[host].raid_config is defined %}
+{% for device in hostvars[host].raid_config.devices %}
+define service{
+        use                             generic-service
+        host_name                       {{ host }}
+        service_description             RAID device {{ device }}
+        check_command                   check_nrpe!check_raid_{{ device }}
+        }
+
+{% endfor %}
+{% endif %}
+{% endfor %}
 define service{
         use                             daily-service
         host_name                       {{ groups['backup_server'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
@@ -147,7 +160,7 @@ define service{
         }
 
 
-# Define a service to check the load on the local machine. 
+# Define a service to check the load on the local machine.
 define service{
         use                             generic-service,graphed-service
         host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
@@ -155,7 +168,7 @@ define service{
         check_command                   check_nrpe!check_load
         }
 
-# Define a service to check the RAM on the local machine. 
+# Define a service to check the RAM on the local machine.
 define service{
         use                             generic-service,graphed-service
         host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
@@ -173,8 +186,8 @@ define service{
 
 # FAIL2BAN
 define service{
-        use                             generic-service
-        host_name                       {{ groups['all'] | difference(groups['physical_server']) | map('extract', hostvars, ['inventory_hostname']) | sort |  join(',') }}
+        use                             generic-service,graphed-service
+        host_name                       {{ groups['all'] | map('extract', hostvars, ['inventory_hostname']) | sort |  join(',') }}
         service_description             Fail2ban
         check_command                   check_nrpe!check_fail2ban
         }
@@ -203,22 +216,6 @@ define service{
         check_command                   check_nrpe!check_docker_sso
         }
 
-
-# Docker Odoo 
-define service{
-        use                             generic-service,graphed-service
-        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
-        service_description             Docker Odoo
-        check_command                   check_nrpe!check_docker_odoo
-        }
-
-# Docker Odoo Test
-define service{
-        use                             generic-service,graphed-service
-        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
-        service_description             Docker Odoo Test
-        check_command                   check_nrpe!check_docker_odoo_test
-        }
 
 # Docker Odoo Whitelists
 define service{
@@ -342,6 +339,15 @@ define service{
         service_description             Certificate Odoo Server {{ hostvars[host].odoo_prod.url }}
         check_command                   check_certif!'{{ hostvars[host].odoo_prod.url }}'!443
         }
+
+# Docker Odoo
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ host }}
+        service_description             Docker Odoo
+        check_command                   check_nrpe!check_docker_odoo
+        }
+
 {% endif %}
 
 {% for instance in hostvars[host].odoo_nonprod_instances | default([]) %}
@@ -357,6 +363,14 @@ define service{
         host_name                       {{ host }}
         service_description             Certificate {{ instance.name }} Server {{ instance['url'] }}
         check_command                   check_certif!'{{ instance['url'] }}'!443
+        }
+
+# Docker Odoo non prod instance
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ host }}
+        service_description             Docker {{ instance.name }}
+        check_command                   check_nrpe!check_docker_{{ instance.name }}
         }
 
 {% endfor %}
@@ -397,15 +411,6 @@ define service{
 {% endfor %}
 
 {% for host in groups['docker_nagios'] | sort %}
-# {{ host }} Docker Nagios
-# HTTPS + certificate verification on Dockers
-#define service{
-#        use                             generic-service
-#        host_name                       {{ hostvars[host].nagios_url }}
-#        service_description             Nagios Server
-#  	 check_command			check_http!'{{ hostvars[host].nagios_url }}'
-#        }
-
 define service{
         use                             daily-service
         host_name                       {{ host }}
@@ -544,22 +549,22 @@ define service{
 {% for host in groups['odoo_server'] | sort %}
 # {{ host }} Odoo
 define service{
-        use                             generic-service            
-        host_name                       {{ host }} 
+        use                             generic-service
+        host_name                       {{ host }}
         service_description             Odoo {{ hostvars[host].odoo_url }}
         check_command                   check_https!'{{ hostvars[host].odoo_url }}'!/web/login
         }
 
 define service{
-        use                             daily-service            
-        host_name                       {{ host }} 
+        use                             daily-service
+        host_name                       {{ host }}
         service_description             Certificate Odoo {{ hostvars[host].odoo_url }}
         check_command                   check_certif!'{{ hostvars[host].odoo_url }}'!443
         }
 
 define service{
         use                             generic-service
-        host_name                       {{ host }} 
+        host_name                       {{ host }}
         service_description             Odoo Service
         check_command                   check_nrpe!check_procs_odoo
         }
@@ -567,17 +572,17 @@ define service{
 {% endfor %}
 
 {% for host in groups['owncloud_server'] | sort %}
-# {{ host }} Owncloud 
+# {{ host }} Owncloud
 define service{
-        use                             generic-service            
-        host_name                       {{ host }} 
+        use                             generic-service
+        host_name                       {{ host }}
         service_description             OwnCloud {{ hostvars[host].cloud_url }}
         check_command                   check_https!'{{ hostvars[host].cloud_url }}'!/index.php/login
         }
 
 define service{
-        use                             daily-service            
-        host_name                       {{ host }} 
+        use                             daily-service
+        host_name                       {{ host }}
         service_description             Certificate OwnCloud {{ hostvars[host].cloud_url }}
         check_command                   check_certif!'{{ hostvars[host].cloud_url }}'!443
         }
