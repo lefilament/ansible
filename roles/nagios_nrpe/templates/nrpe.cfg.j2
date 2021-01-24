@@ -16,6 +16,11 @@ server_port=5666
 
 # Generic checks
 command[check_hda1]=/usr/local/nagios/libexec/check_disk -w 20% -c 10% -p /
+{% if raid_config is defined %}
+{% for device in raid_config.devices %}
+command[check_raid_{{ device }}]=/usr/local/nagios/libexec/custom-plugin/check_mdstat.sh {{ device }} {{ raid_config.disks }}
+{% endfor %}
+{% endif %}
 command[check_load]=/usr/local/nagios/libexec/check_load -r -w .85,.80,.75 -c .99,.95,.90
 command[check_mem]=/usr/local/nagios/libexec/custom-plugin/check_mem.pl -f -C -w 20 -c 5
 {% if inventory_hostname in groups.docker %}
@@ -27,7 +32,7 @@ command[check_users]=/usr/local/nagios/libexec/check_users -w 5 -c 10
 command[check_version]=/usr/local/nagios/libexec/custom-plugin/check_version.sh
 
 # Check specific processes
-command[check_fail2ban]=/usr/local/nagios/libexec/custom-plugin/check_fail2ban.sh -p /etc/fail2ban/jail.local -l /var/log/fail2ban.log -w 5 -c 10
+command[check_fail2ban]=/usr/local/nagios/libexec/custom-plugin/check_fail2ban -w 350 -c 500
 {% if inventory_hostname in groups.docker_gitlab %}
 command[check_procs_sshd]=/usr/local/nagios/libexec/check_procs -w 4 -c 2: -C sshd -a -D
 {% else %}
@@ -54,52 +59,56 @@ command[check_odoo_storage]=/usr/local/nagios/libexec/custom-plugin/check_odoo_s
 {% endif %}
 {% if inventory_hostname in groups.docker %}
 # Docker Containers
-command[check_docker_proxy]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container inverseproxy.* --cpu 10:15 --memory 10:15:% --status running
+command[check_docker_proxy]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers inverseproxy.* --cpu 10:15 --memory 10:15:% --status running
 {% endif %}
 {% if inventory_hostname in groups.docker_auth %}
-command[check_docker_ldap]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container .*ldap.* --cpu 5:10 --memory 12:17:% --status running
-command[check_docker_sso]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container sso --cpu 5:10 --memory 7:12:% --status running
+command[check_docker_ldap]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers .*ldap.* --cpu 5:10 --memory 12:17:% --status running
+command[check_docker_sso]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers sso --cpu 5:10 --memory 7:12:% --status running
 {% endif %}
 {% if inventory_hostname in groups.docker_drawio %}
-command[check_docker_drawio]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container drawio.* --cpu 5:10 --memory 7:12:% --status running
+command[check_docker_drawio]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers drawio.* --cpu 5:10 --memory 7:12:% --status running
 {% endif %}
 {% if inventory_hostname in groups.docker_etherpad %}
-command[check_docker_etherpad]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container etherpad.* --cpu 5:10 --memory 7:12:% --status running
+command[check_docker_etherpad]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers etherpad.* --cpu 5:10 --memory 7:12:% --status running
 {% endif %}
 {% if inventory_hostname in groups.docker_framadate %}
-command[check_docker_framadate]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container framadate.* --cpu 5:10 --memory 7:12:% --status running
+command[check_docker_framadate]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers framadate.* --cpu 5:10 --memory 7:12:% --status running
 {% endif %}
 {% if inventory_hostname in groups.docker_gitlab %}
-command[check_docker_gitlab]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container gitlab.* --cpu 5:10 --memory 40:60:% --status running
+command[check_docker_gitlab]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers gitlab.* --cpu 5:10 --memory 40:60:% --status running
 {% endif %}
 {% if inventory_hostname in groups.docker_mattermost %}
-command[check_docker_mattermost]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container mattermost.* --cpu 5:10 --memory 7:12:% --status running
+command[check_docker_mattermost]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers mattermost.* --cpu 5:10 --memory 7:12:% --status running
 {% endif %}
 {% if inventory_hostname in groups.docker_nagios %}
-command[check_docker_nagios]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container nagios.* --cpu 10:15 --memory 10:15:% --status running
+command[check_docker_nagios]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers nagios.* --cpu 10:15 --memory 10:15:% --status running
 {% endif %}
 {% if inventory_hostname in groups.docker_nextcloud %}
 {% if inventory_hostname in groups.docker_odoo %}
-command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container nextcloud.* --cpu 70:80 --memory 15:25:% --status running
+command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers nextcloud.* --cpu 70:80 --memory 15:25:% --status running
 {% else %}
-command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container nextcloud.* --cpu 70:80 --memory 65:85:% --status running
+command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers nextcloud.* --cpu 70:80 --memory 65:85:% --status running
 {% endif %}
 {% endif %}
 {% if inventory_hostname in groups.docker_odoo %}
-command[check_docker_odoo]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container odoo_.* --cpu 10:15 --memory 35:45:% --status running
-command[check_docker_odoo_test]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container testodoo.* --cpu 10:15 --memory 20:25:% --status running
-command[check_docker_whitelists]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container whitelists.* --cpu 5:10 --memory 5:7:% --status running
+{% if odoo_prod is defined %}
+command[check_docker_odoo]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers odoo odoo_.* --cpu 10:15 --memory 35:45:% --status running
+{% endif %}
+{% for instance in odoo_nonprod_instances | default([]) %}
+command[check_docker_{{ instance.name }}]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers {{ instance.dir }}.* --cpu 10:15 --memory 20:25:% --status running
+{% endfor %}
+command[check_docker_whitelists]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers whitelists.* --cpu 5:10 --memory 5:7:% --status running
 {% endif %}
 {% if inventory_hostname in groups.docker_owncloud %}
 {% if inventory_hostname in groups.docker_odoo %}
-command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container owncloud.* --cpu 70:80 --memory 15:25:% --status running
+command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers owncloud.* --cpu 70:80 --memory 15:25:% --status running
 {% else %}
-command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container owncloud.* --cpu 70:80 --memory 65:85:% --status running
+command[check_docker_cloud]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers owncloud.* --cpu 70:80 --memory 65:85:% --status running
 {% endif %}
 {% endif %}
 {% if inventory_hostname in groups.docker_privatebin %}
-command[check_docker_privatebin]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container privatebin --cpu 5:10 --memory 7:12:% --status running
+command[check_docker_privatebin]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers privatebin --cpu 5:10 --memory 7:12:% --status running
 {% endif %}
 {% if inventory_hostname in groups.docker_tuleap %}
-command[check_docker_tuleap]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --container tuleap.* --cpu 5:10 --memory 9:14:% --status running
+command[check_docker_tuleap]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers tuleap.* --cpu 5:10 --memory 9:14:% --status running
 {% endif %}

@@ -4,7 +4,9 @@
   become: yes
   roles:
   - { role: init_server, tags: init }
-  - { role: iptables, tags: iptables }
+  - { role: iptables }
+  vars:
+  - { no_fail2ban: true }
 
 - hosts: backup_server
   gather_facts: no
@@ -94,7 +96,7 @@
 - hosts: odoo_server
   gather_facts: no
   become: yes
-  roles: 
+  roles:
   - { role: odoo_server, tags: odoo }
 
 - hosts: owncloud_server
@@ -118,8 +120,15 @@
 - hosts: all 
   gather_facts: no
   become: yes
-  roles: 
+  roles:
   - { role: nagios_nrpe, tags: nrpe }
+
+- hosts: docker
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_server_step2, tags: docker }
+  - { role: iptables, tags: iptables }
 
 - hosts: docker_nagios
   gather_facts: no

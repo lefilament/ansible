@@ -1,7 +1,7 @@
 ---
 
 - name: Correct the machine hostname to "{{ inventory_hostname_short }}"
-  hostname: name="{{ inventory_hostname_short | lower }}"
+  hostname: name="{{ inventory_hostname_short | lower | regex_replace('_','')}}"
 
 - name: Debian Update repo and upgrade installed packages
   apt:
@@ -104,6 +104,7 @@
     owner: root
     group: root
     mode: '440'
+  tags: nrpe_config
 
 - name: add public key to authorized keys for {{ host_user }}
   authorized_key:

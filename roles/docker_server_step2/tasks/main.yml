@@ -1,0 +1,31 @@
+---
+
+- name: Retrieve subuid for dockremap
+  command: grep dockremap /etc/subuid
+  register: dockremap_subuid_output
+  when: docker_no_namespace is not defined or not docker_no_namespace
+
+- name: Retrieve subgid for dockremap
+  command: grep dockremap /etc/subgid
+  register: dockremap_subgid_output
+  when: docker_no_namespace is not defined or not docker_no_namespace
+
+- name: Save uid to hostvars for dockremap user
+  local_action:
+    module: lineinfile
+    name: "host_vars/{{ inventory_hostname }}"
+    regexp: "dockremap_subuid:"
+    line: "dockremap_subuid: {{ dockremap_subuid_output.stdout.split(':')[1] }}"
+  connection: local
+  become: no
+  when: docker_no_namespace is not defined or not docker_no_namespace
+
+- name: Save gid to hostvars for dockremap user
+  local_action:
+    module: lineinfile
+    name: "host_vars/{{ inventory_hostname }}"
+    regexp: "dockremap_subgid:"
+    line: "dockremap_subgid: {{ dockremap_subgid_output.stdout.split(':')[1] }}"
+  connection: local
+  become: no
+  when: docker_no_namespace is not defined or not docker_no_namespace

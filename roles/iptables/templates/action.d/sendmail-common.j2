@@ -16,7 +16,6 @@ after = sendmail-common.local
 #
 actionstart = printf %%b "Subject: [Fail2Ban] <name>: demarre sur {{ inventory_hostname | lower }}
               Date: `LC_ALL=C date +"%%a, %%d %%h %%Y %%T %%z"`
-              From: {{ monitoring_mail_user }}
               To: <dest>\n
               Bonjour,\n
               La cage <name> a été démarree.\n
@@ -29,7 +28,6 @@ actionstart = printf %%b "Subject: [Fail2Ban] <name>: demarre sur {{ inventory_h
 #
 actionstop = printf %%b "Subject: [Fail2Ban] <name>: arrete sur {{ inventory_hostname | lower }}
              Date: `LC_ALL=C date +"%%a, %%d %%h %%Y %%T %%z"`
-             From: {{ monitoring_mail_user }}
              To: <dest>\n
              Bonjour,\n
              La cage <name> a été stoppee.\n
@@ -62,16 +60,16 @@ actionunban =
 
 # Your system mail command
 #
-mailcmd = /usr/sbin/sendmail -f "{{ monitoring_mail_user }}" "<dest>"
+mailcmd = /usr/sbin/sendmail "<dest>"
 
 # Recipient mail address
 #
-dest = root
+dest = {{ maintenance_email }}
 
 # Sender mail address
 #
-sender = fail2ban
+sender = {{ inventory_hostname|lower }}_server@{{ inventory_hostname|lower }}.server
 
 # Sender display name
 #
-sendername = Fail2Ban
+sendername = {{ inventory_hostname }}

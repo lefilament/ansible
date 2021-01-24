@@ -23,7 +23,6 @@ norestored = 1
 #
 actionban = ( printf %%b "Subject: [Fail2Ban] <name>: <ip> bannie sur {{ inventory_hostname | lower }}
             Date: `LC_ALL=C date +"%%a, %%d %%h %%Y %%T %%z"`
-            From: {{ monitoring_mail_user }}
             To: <dest>\n
             Bonjour,\n
             L'adresse IP <ip> vient d'etre bannie par Fail2Ban apres

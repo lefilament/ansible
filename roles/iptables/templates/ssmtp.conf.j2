@@ -1,9 +1,4 @@
 #
 # Config file for sSMTP sendmail
 #
-mailhub={{ monitoring_mail_server }}:465
-FromLineOverride=yes
-UseTLS=yes
-AuthUser={{ monitoring_mail_user }}
-AuthPass={{ monitoring_mail_pass }}
-AuthMethod=LOGIN
+mailhub={{ lf_mail_smtp }}

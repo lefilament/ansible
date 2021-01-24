@@ -1,7 +1,7 @@
 ---
 
 - name: remove mail packages not necessary
-  apt: 
+  apt:
     name: [bsd-mailx mailutils postfix]
     autoremove: yes
     state: absent
@@ -10,7 +10,7 @@
 - name: check that ssmtp is installed
   package: name=ssmtp state=present
 - name: install fail2ban, iptables-persistent and auditd
-  package: 
+  package:
     name:
       - fail2ban
       - iptables-persistent
@@ -21,7 +21,7 @@
   when: not ansible_check_mode
 
 - name: check presence of fail2ban, iptables-persistent and auditd packages
-  package: 
+  package:
     name:
       - fail2ban
       - iptables-persistent
@@ -48,35 +48,38 @@
 
 - name: push specific fail2ban jail configuration file
   template: src=jail.{{ ansible_distribution }}{{ ansible_distribution_major_version }}.j2 dest=/etc/fail2ban/jail.local
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family == "Debian" and no_fail2ban is not defined
   notify: restart fail2ban
+  tags: fail2ban
 
 - name: push specific fail2ban actions
   template: src={{ item }}.j2 dest=/etc/fail2ban/{{ item }}.local
   with_items:
     - action.d/sendmail-common
     - action.d/sendmail-whois-lines
-  when: ansible_os_family == "Debian"
+  when: ansible_os_family == "Debian" and no_fail2ban is not defined
   notify: restart fail2ban
+  tags: fail2ban
 
 - name: push specific fail2ban filters
   copy: src={{ item }} dest=/etc/fail2ban/filter.d/{{ item }}.local
   with_items:
     - odoo-auth
     - traefik-auth
-  when: inventory_hostname in groups.docker
+  when: inventory_hostname in groups.docker and no_fail2ban is not defined
   notify: restart fail2ban
+  tags: fail2ban
 
 - name: create iptables configuration
   template: src=iptables.conf.j2 dest=/etc/iptables/rules.v4 owner=root group=root mode=0600
-  notify: 
+  notify:
     - restore-iptables
     - restart fail2ban
     - restart docker
 
 - name: create ip6tables configuration
   template: src=ip6tables.conf.j2 dest=/etc/iptables/rules.v6 owner=root group=root mode=0600
-  notify: 
+  notify:
     - restore-iptables
     - restart fail2ban
     - restart docker

@@ -10,3 +10,9 @@ root    ALL=(ALL:ALL) ALL
 
 {{ host_user }} ALL=(ALL) ALL
 {% if host_user2 is defined %}{{ host_user2 }} ALL=(ALL) ALL{% endif %}
+
+nagios ALL=NOPASSWD: /usr/bin/fail2ban-client status
+nagios ALL=NOPASSWD: /usr/bin/fail2ban-client status *
+nagios ALL=NOPASSWD: /usr/bin/fail2ban-client get * banip
+nagios ALL=NOPASSWD: /usr/bin/fail2ban-client get * banip --with-time
+nagios ALL=NOPASSWD: /usr/bin/fail2ban-client get * bantime 

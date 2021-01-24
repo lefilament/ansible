@@ -1,13 +1,13 @@
 ---
 
 - name: Install NRPE dependencies
-  package: 
+  package:
     name: ['git', 'autoconf', 'gcc', 'libc6', 'libmcrypt-dev', 'make', 'libssl-dev', 'wget']
     state: present
   when: ansible_os_family == "Debian"
 
 - name: Install NRPE dependencies
-  package: 
+  package:
     name: ['git', 'gcc', 'glibc', 'glibc-common', 'openssl', 'openssl-devel', 'perl', 'wget']
     state: present
   when: ansible_os_family == "RedHat"
@@ -134,17 +134,23 @@
   file: name={{ item }} mode=0555
   with_items:
     - /usr/local/nagios/libexec/custom-plugin/check_cloud_storage.sh
-    - /usr/local/nagios/libexec/custom-plugin/check_fail2ban.sh
     - /usr/local/nagios/libexec/custom-plugin/check_mountpoint.sh
     - /usr/local/nagios/libexec/custom-plugin/check_newest_file_age.sh
     - /usr/local/nagios/libexec/custom-plugin/check_odoo_storage.sh
 
 - name: add check_docker script
-  get_url: 
+  get_url:
     url: https://raw.githubusercontent.com/timdaman/check_docker/master/check_docker/check_docker.py
     dest: /usr/local/nagios/libexec/custom-plugin/check_docker.py
     mode: '0555'
   when: inventory_hostname in groups.docker
+
+- name: add check_mdstat script
+  get_url:
+    url: https://exchange.nagios.org/components/com_mtree/attachment.php?link_id=5423&cf_id=24
+    dest: /usr/local/nagios/libexec/custom-plugin/check_mdstat.sh
+    mode: '0555'
+  when: raid_config is defined
 
 - name: add check_mem.pl script
   get_url:
@@ -157,6 +163,13 @@
     url: https://exchange.nagios.org/components/com_mtree/attachment.php?link_id=1785&cf_id=24
     dest: /usr/local/nagios/libexec/custom-plugin/check_version.sh
     mode: '0555'
+
+- name: add check_fail2ban script
+  get_url:
+    url: https://raw.githubusercontent.com/n1tr0-5urf3r/icinga2-scripts/master/plugins/check_fail2ban
+    dest: /usr/local/nagios/libexec/custom-plugin/check_fail2ban
+    mode: '0555'
+  tags: nrpe_config
 
 - name: add nagios to www-data group
   user:
