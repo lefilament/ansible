@@ -21,3 +21,10 @@ srv_proxy_pass: "{{ SERVER_srv_proxy_pass }}"
 ## SFTP user to connect to Backup server
 backup_sftp_user: "{{ SERVER_backup_sftp_user }}"
 
+## RAID configuration
+raid_config:
+  level: 1
+  disks: 2
+  devices:
+    - md0
+    - md1
