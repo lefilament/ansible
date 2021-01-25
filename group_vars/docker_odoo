@@ -1,4 +1,4 @@
 ---
 
-odoo_db_version: 10
-odoo_version: 12.0
+odoo_db_version: 13
+odoo_version: 14.0
