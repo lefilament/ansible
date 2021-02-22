@@ -7,9 +7,9 @@
   - { role: raw_server, tags: raw }
   vars:
   - { ansible_become_pass: "{{ host_admin_password }}"}
-  - { ansible_ssh_user: "{{ host_admin_user }}" }
-  - { ansible_ssh_pass: "{{ host_admin_password }}" }
-  - { ansible_ssh_port: 22 }
+  - { ansible_user: "{{ host_admin_user }}" }
+  - { ansible_password: "{{ host_admin_password }}" }
+  - { ansible_port: 22 }
   - { ansible_connection: paramiko }
 
 - hosts: all
@@ -19,8 +19,8 @@
   - { role: init_server, tags: init }
   vars:
   - { ansible_become_pass: "{{ host_admin_password }}"}
-  - { ansible_ssh_user: "{{ host_admin_user }}" }
-  - { ansible_ssh_pass: "{{ host_admin_password }}" }
-  - { ansible_ssh_port: 22 }
+  - { ansible_user: "{{ host_admin_user }}" }
+  - { ansible_password: "{{ host_admin_password }}" }
+  - { ansible_port: 22 }
   - { ansible_connection: paramiko }
   - { initial_playbook: true }

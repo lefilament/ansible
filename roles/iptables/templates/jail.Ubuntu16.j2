@@ -185,7 +185,7 @@ action = %(action_)s
 
 [sshd]
 enabled = true
-port    = {{ ansible_ssh_port }}
+port    = {{ ansible_port }}
 logpath = %(sshd_log)s
 
 
@@ -194,7 +194,7 @@ logpath = %(sshd_log)s
 # The mail-whois action send a notification e-mail with a whois request
 # in the body.
 enabled = true
-port    = {{ ansible_ssh_port }}
+port    = {{ ansible_port }}
 logpath = %(sshd_log)s
 
 

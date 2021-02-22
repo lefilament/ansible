@@ -88,7 +88,7 @@ before = paths-debian.conf
 # "ignoreip" can be a list of IP addresses, CIDR masks or DNS hosts. Fail2ban
 # will not ban a host which matches an address in this list. Several addresses
 # can be defined using space (and/or comma) separator.
-ignoreip = 127.0.0.1/8{% if inventory_hostname in groups.docker %} 172.16.0.0/12 192.168.0.0/16{% endif %}{% for host in groups.docker_nagios %} {{ hostvars[host].ansible_ssh_host }}/32{% endfor %}
+ignoreip = 127.0.0.1/8{% if inventory_hostname in groups.docker %} 172.16.0.0/12 192.168.0.0/16{% endif %}{% for host in groups.docker_nagios %} {{ hostvars[host].ansible_host }}/32{% endfor %}
 
 # External command that will take an tagged arguments to ignore, e.g. <ip>,
 # and return true if the IP is to be ignored. False otherwise.
@@ -280,7 +280,7 @@ backend = systemd
 enabled = true
 logpath = /var/log/auth.log
 mode    = aggressive
-port    = {{ ansible_ssh_port }}
+port    = {{ ansible_port }}
 
 
 # Jail for more extended banning of persistent abusers

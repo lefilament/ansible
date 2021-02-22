@@ -24,7 +24,7 @@ filebeat.autodiscover:
 # ------------------------------ Logstash Output -------------------------------
 output.logstash:
   # The Logstash hosts
-  hosts: ["{{ hostvars['Filament_Dedicated'].ansible_ssh_host }}:{{ logstash_port }}"]
+  hosts: ["{{ hostvars['Filament_Dedicated'].ansible_host }}:{{ logstash_port }}"]
 
   # Set gzip compression level.
   compression_level: 3
