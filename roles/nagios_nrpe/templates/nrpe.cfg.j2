@@ -1,8 +1,8 @@
 allow_bash_command_substitution=0
 {% if inventory_hostname in groups.docker_nagios %}
-allowed_hosts={{ groups.docker_nagios | map('extract', hostvars, ['ansible_ssh_host']) | join(',') }},192.168.239.2,127.0.0.1
+allowed_hosts={{ groups.docker_nagios | map('extract', hostvars, ['ansible_host']) | join(',') }},192.168.239.2,127.0.0.1
 {% else %}
-allowed_hosts={{ groups.docker_nagios | map('extract', hostvars, ['ansible_ssh_host']) | join(',') }},127.0.0.1
+allowed_hosts={{ groups.docker_nagios | map('extract', hostvars, ['ansible_host']) | join(',') }},127.0.0.1
 {% endif %}
 command_timeout=60
 connection_timeout=300

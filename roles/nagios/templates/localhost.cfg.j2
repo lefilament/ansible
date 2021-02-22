@@ -116,7 +116,7 @@ define service{
         use                             generic-service
         host_name                       {{ inventory_hostname }}
         service_description             SSH
-	check_command			check_ssh_port!{{ ansible_ssh_port }}
+	check_command			check_ssh_port!{{ ansible_port }}
         }
 
 

@@ -11,7 +11,7 @@
 ## DOCKER-USER chain
 # Autoriser les logs entrants des serveurs en maintenance
 {% for host in groups.maintenance_contract %}
--A DOCKER-USER -s {{ hostvars[host].ansible_ssh_host }} -p tcp -m tcp --dport {{ logstash_port }} -m state --state NEW,ESTABLISHED -j ACCEPT
+-A DOCKER-USER -s {{ hostvars[host].ansible_host }} -p tcp -m tcp --dport {{ logstash_port }} -m state --state NEW,ESTABLISHED -j ACCEPT
 {% endfor %}
 -A DOCKER-USER -p tcp -m tcp --dport {{ logstash_port }} -j LOGGING
 {% endif %}
@@ -26,7 +26,7 @@
 -A INPUT -p icmp --icmp-type echo-reply -j ACCEPT
 {% endif %}
 # SSH
--A INPUT -p tcp -m tcp --dport {{ ansible_ssh_port }} -j ACCEPT
+-A INPUT -p tcp -m tcp --dport {{ ansible_port }} -j ACCEPT
 # WEB
 {% if nginx_enabled is defined %}
 -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
@@ -42,7 +42,7 @@
 -A INPUT -p udp -m udp --dport 68 -j ACCEPT
 # NRPE
 {% for host in groups.docker_nagios %}
--A INPUT -s {{ hostvars[host].ansible_ssh_host }} -p tcp -m tcp --dport 5666 -m state --state NEW,ESTABLISHED -j ACCEPT
+-A INPUT -s {{ hostvars[host].ansible_host }} -p tcp -m tcp --dport 5666 -m state --state NEW,ESTABLISHED -j ACCEPT
 {% endfor %}
 {% if inventory_hostname in groups.docker_nagios %}
 -A INPUT -s 192.168.239.0/24 -p tcp -m tcp --dport 5666 -m state --state NEW,ESTABLISHED -j ACCEPT
@@ -60,7 +60,7 @@
 -A OUTPUT -p icmp --icmp-type echo-request -j ACCEPT
 {% endif %}
 # SSH
--A OUTPUT -p tcp -m tcp --dport {{ ansible_ssh_port }} -j ACCEPT
+-A OUTPUT -p tcp -m tcp --dport {{ ansible_port }} -j ACCEPT
 # WEB
 -A OUTPUT -p tcp -m tcp --dport 80 -j ACCEPT
 -A OUTPUT -p tcp -m tcp --dport 443 -j ACCEPT
@@ -82,7 +82,7 @@
 {% if inventory_hostname in groups.maintenance_contract %}
 # Log Server
 {% for host in groups.docker_elk %}
--A OUTPUT -d {{ hostvars[host].ansible_ssh_host }} -p tcp -m tcp --dport {{ logstash_port }} -j ACCEPT
+-A OUTPUT -d {{ hostvars[host].ansible_host }} -p tcp -m tcp --dport {{ logstash_port }} -j ACCEPT
 {% endfor %}
 {% endif %}
 {% if inventory_hostname in groups.odoo_server %}
