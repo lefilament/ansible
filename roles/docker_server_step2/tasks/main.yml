@@ -18,7 +18,7 @@
     line: "dockremap_subuid: {{ dockremap_subuid_output.stdout.split(':')[1] }}"
   connection: local
   become: no
-  when: docker_no_namespace is not defined or not docker_no_namespace
+  when: (docker_no_namespace is not defined or not docker_no_namespace) and dockremap_subuid_output.stdout is defined
 
 - name: Save gid to hostvars for dockremap user
   local_action:
@@ -28,4 +28,4 @@
     line: "dockremap_subgid: {{ dockremap_subgid_output.stdout.split(':')[1] }}"
   connection: local
   become: no
-  when: docker_no_namespace is not defined or not docker_no_namespace
+  when: (docker_no_namespace is not defined or not docker_no_namespace) and dockremap_subgid_output.stdout is defined
