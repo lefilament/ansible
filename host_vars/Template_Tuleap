@@ -1,5 +1,5 @@
 ## Tuleap configuration
-# Tuleap URL
+# Tuleap URL (only sub.domain without https:// in front)
 tuleap_url: "{{ lf_tuleap_url }}"
 # Tuleap DB
 tuleap_db_root_pass: "{{ lf_tuleap_db_root_pass }}"

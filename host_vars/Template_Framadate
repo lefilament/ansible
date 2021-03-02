@@ -1,5 +1,5 @@
 ## Framadate configuration
-# Framadate URL
+# Framadate URL (only sub.domain without https:// in front)
 date_url: "{{ SERVER_date_url }}"
 # Framadate DB
 date_db_root: "{{ SERVER_date_db_root }}"

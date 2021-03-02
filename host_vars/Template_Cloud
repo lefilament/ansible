@@ -1,5 +1,5 @@
 ## Nextcloud configuration
-# Nextcloud URL
+# Nextcloud URL (only sub.domain without https:// in front)
 cloud_url: "{{ SERVER_cloud_url }}"
 # Nextcloud DB password
 cloud_db_pass: "{{ SERVER_cloud_db_pass }}"
@@ -13,7 +13,7 @@ cloud_admin_pass: "{{ SERVER_cloud_pass }}"
 ## Document collaboration configuration
 # Document collaboration present for OnlyOffice ?
 cloud_onlyoffice: yes
-# Document collaboration OnlyOffice URL
+# Document collaboration OnlyOffice URL (only sub.domain without https:// in front)
 cloud_onlyoffice_url: "{{ SERVER_onlyoffice_url }}"
 
 # Document collaboration present for Collabora ?
@@ -21,5 +21,5 @@ cloud_collabora: yes
 # Collabora admin user and password
 cloud_collabora_admin_user: "{{ SERVER_collabora_admin_user }}"
 cloud_collabora_admin_pass: "{{ SERVER_collabora_admin_pass }}"
-# Document collaboration Collabora URL
+# Document collaboration Collabora URL (only sub.domain without https:// in front)
 cloud_collabora_url: "{{ SERVER_collabora_url }}"

@@ -11,10 +11,10 @@ ldap_admin_pass: "{{ SERVER_ldap_admin_pass }}"
 ldap_config_pass: "{{ SERVER_ldap_config_pass }}"
 # Readonly password
 ldap_readonly_pass: "{{ SERVER_ldap_readonly_pass }}"
-# URL for PHP MyAdmin
+# URL for PHP MyAdmin (only sub.domain without https:// in front)
 ldap_url: "{{ SERVER_ldap_url }}"
 
 ## SSO parameters
-# URL for SSO portal
+# URL for SSO portal (only sub.domain without https:// in front)
 sso_url: "{{ SERVER_sso_url }}"
 

@@ -1,0 +1,6 @@
+## GitLab configuration
+# GitLab URL (only sub.domain without https:// in front)
+git_url: "{{ SERVER_git_url }}"
+# Enable Omniauth (for SSO connection)
+enable_omniauth: yes
+

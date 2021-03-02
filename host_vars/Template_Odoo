@@ -3,7 +3,7 @@
 # By default, an Odoo server is deployed with both prod and test instances.
 # By default, all variables for test instance are copied from prod one, but URL and database name
 odoo_prod:
-    # PROD URL
+    # PROD URL (only sub.domain without https:// in front)
     url: "{{ SERVER_odoo_url }}"
     master_pass: "{{ SERVER_odoo_master_pass }}"
     # Database identifiers user and password
@@ -58,7 +58,7 @@ odoo_nonprod_instances:
       - name: odoo_test
         # Directory where this test instance will be installed on server
         dir: "odootest"
-        # TEST URL
+        # TEST URL (only sub.domain without https:// in front)
         url: "{{ SERVER_odoo_test_url }}"
         # OPTIONAL for when prod instance not deployed on server
         # Hostname of server where prod server is installed (required for retrieving prod database on test ones)
