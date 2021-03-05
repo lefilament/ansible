@@ -13,7 +13,7 @@
 - name: Save uid to hostvars for dockremap user
   local_action:
     module: lineinfile
-    name: "host_vars/{{ inventory_hostname }}"
+    name: "{{ inventory_dir }}/host_vars/{{ inventory_hostname }}"
     regexp: "dockremap_subuid:"
     line: "dockremap_subuid: {{ dockremap_subuid_output.stdout.split(':')[1] }}"
   connection: local
@@ -23,7 +23,7 @@
 - name: Save gid to hostvars for dockremap user
   local_action:
     module: lineinfile
-    name: "host_vars/{{ inventory_hostname }}"
+    name: "{{ inventory_dir }}/host_vars/{{ inventory_hostname }}"
     regexp: "dockremap_subgid:"
     line: "dockremap_subgid: {{ dockremap_subgid_output.stdout.split(':')[1] }}"
   connection: local
