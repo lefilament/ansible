@@ -45,7 +45,7 @@ odoo_prod:
     # Other Odoo modules where git repo is the module
     other_repos:
      - repo: filament
-       url: git@github.com:lefilament/link_sale_project_tasks.git
+       url: https://github.com/lefilament/link_sale_project_tasks.git
     # Other Odoo modules where git repo contains various modules
     other_modules:
      - repo: filament
