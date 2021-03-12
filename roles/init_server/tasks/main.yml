@@ -27,6 +27,26 @@
   apt:
     name: samba*
     autoremove: yes
+    purge: yes
+    state: absent
+  when: ansible_os_family == "Debian"
+
+- name: Remove snap-related package
+  apt:
+    name: snapd
+    autoremove: yes
+    purge: yes
+    state: absent
+  when: ansible_os_family == "Debian"
+
+- name: Remove snap directories
+  file:
+    path:
+      - /root/snap
+      - /home/{{ host_user }}/snap
+      - /snap
+      - /var/snap
+      - /var/lib/snapd
     state: absent
   when: ansible_os_family == "Debian"
 
