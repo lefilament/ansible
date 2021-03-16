@@ -280,7 +280,7 @@ backend = systemd
 enabled = true
 logpath = /var/log/auth.log
 mode    = aggressive
-port    = {{ ansible_port }}
+port    = {{ default_sshd_port }}
 
 
 # Jail for more extended banning of persistent abusers

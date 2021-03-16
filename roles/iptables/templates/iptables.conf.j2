@@ -26,7 +26,7 @@
 -A INPUT -p icmp --icmp-type echo-reply -j ACCEPT
 {% endif %}
 # SSH
--A INPUT -p tcp -m tcp --dport {{ ansible_port }} -j ACCEPT
+-A INPUT -p tcp -m tcp --dport {{ default_sshd_port }} -j ACCEPT
 # WEB
 {% if nginx_enabled is defined %}
 -A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
@@ -60,7 +60,7 @@
 -A OUTPUT -p icmp --icmp-type echo-request -j ACCEPT
 {% endif %}
 # SSH
--A OUTPUT -p tcp -m tcp --dport {{ ansible_port }} -j ACCEPT
+-A OUTPUT -p tcp -m tcp --dport {{ default_sshd_port }} -j ACCEPT
 # WEB
 -A OUTPUT -p tcp -m tcp --dport 80 -j ACCEPT
 -A OUTPUT -p tcp -m tcp --dport 443 -j ACCEPT
