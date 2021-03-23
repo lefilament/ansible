@@ -57,7 +57,7 @@ define host{
         process_perf_data               1               ; Process performance data
         retain_status_information       1               ; Retain status information across program restarts
         retain_nonstatus_information    1               ; Retain non-status information across program restarts
-        notification_period             heures-ouvres   ; Send host notifications at any time during working hours
+        notification_period             24x7            ; Send host notifications at any time during working hours
         notification_interval           120             ; Resend notifications every 2 hours
         notification_options            d,u,r           ; Only send notifications for specific host states
         check_period                    24x7            ; By default, hosts are checked round the clock

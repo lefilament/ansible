@@ -216,15 +216,6 @@ define service{
         check_command                   check_nrpe!check_docker_sso
         }
 
-
-# Docker Odoo Whitelists
-define service{
-        use                             generic-service,graphed-service
-        host_name                       {{ groups['docker_odoo'] | map('extract', hostvars, ['inventory_hostname']) | sort | join(',') }}
-        service_description             Docker Odoo Whitelists
-        check_command                   check_nrpe!check_docker_whitelists
-        }
-
 # Docker Cloud
 define service{
         use                             generic-service,graphed-service
@@ -325,6 +316,16 @@ define service{
 
 {% for host in groups['docker_odoo'] | sort %}
 # {{ host }} Docker Odoo
+{% if hostvars[host].whitelisted_urls is defined %}
+# Docker Odoo Whitelists
+define service{
+        use                             generic-service,graphed-service
+        host_name                       {{ host }}
+        service_description             Docker Odoo Whitelists
+        check_command                   check_nrpe!check_docker_whitelists
+        }
+
+{% endif %}
 {% if hostvars[host].odoo_prod is defined %}
 define service{
         use                             generic-service
