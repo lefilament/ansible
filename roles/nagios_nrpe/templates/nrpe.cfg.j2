@@ -15,7 +15,7 @@ pid_file=/usr/local/nagios/var/nrpe.pid
 server_port=5666
 
 # Generic checks
-command[check_hda1]=/usr/local/nagios/libexec/check_disk -w 20% -c 10% -p /
+command[check_hda1]=/usr/local/nagios/libexec/check_disk -u GB -w 20% -c 10% -p /
 {% if raid_config is defined %}
 {% for device in raid_config.devices %}
 command[check_raid_{{ device }}]=/usr/local/nagios/libexec/custom-plugin/check_mdstat.sh {{ device }} {{ raid_config.disks }}
