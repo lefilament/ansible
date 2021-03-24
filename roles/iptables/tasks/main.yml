@@ -33,6 +33,7 @@
   file:
     src: ssmtp
     dest: /usr/sbin/sendmail
+    force: yes
     owner: root
     group: mail
     state: link
