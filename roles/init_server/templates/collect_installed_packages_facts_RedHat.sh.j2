@@ -13,9 +13,11 @@ printf "\n\n-- OS version --\n" >> $file
 cat /etc/redhat-release >> $file
 printf "\n\n-- Installed OS packages --\n" >>  $file
 yum list installed  >> $file
-printf "\n\n-- Installed Python packages --\n" >> $file
-pip list installed >> $file
-if [[ -f "/usr/bin/pip3"]]; then
+if [[ -f "/usr/bin/pip" ]]; then
+  printf "\n\n-- Installed Python packages --\n" >> $file
+  pip list installed >> $file
+fi
+if [[ -f "/usr/bin/pip3" ]]; then
   printf "\n\n-- Installed Python 3 packages --\n" >> $file
   pip3 list installed >> $file
 fi

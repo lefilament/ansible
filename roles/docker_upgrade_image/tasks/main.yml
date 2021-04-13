@@ -14,7 +14,8 @@
 - name: pull auth OpenLDAP docker image
   docker_image:
     name: lefilament/openldap
-    force: yes
+    source: pull
+    force_source: yes
   when: inventory_hostname in groups.docker_auth
   tags: upgrade_auth, pull_openldap
 
@@ -22,16 +23,20 @@
 - name: pull auth PhpLDAPAdmin docker image
   docker_image:
     name: osixia/phpldapadmin
-    force: yes
+    source: pull
+    force_source: yes
   when: inventory_hostname in groups.docker_auth
   tags: upgrade_auth, pull_phpldapadmin
 
 # LemonLDAP
 - name: rebuild auth sso Docker
   docker_image:
-    path: /home/docker/auth/sso
+    build:
+      path: /home/docker/auth/sso
+      pull: yes
     name: filament/lemonldap:1.9-debian
-    force: yes
+    source: build
+    force_source: yes
   when: inventory_hostname in groups.docker_auth
   tags: upgrade_auth, build_lemonldap
 
@@ -71,10 +76,13 @@
 # Backup
 - name: rebuild backup-nextcloud docker
   docker_image:
+    build:
+      path: /home/docker/backups
+      dockerfile: Dockerfile-mysql
+      pull: yes
     name: filament/duplicity:mysql
-    path: /home/docker/backups
-    dockerfile: Dockerfile-mysql
-    force: yes
+    source: build
+    force_source: yes
   when: inventory_hostname in groups.docker_nextcloud | intersect(groups.maintenance_contract)
   tags: upgrade_nextcloud, build_backup_nc
 
@@ -83,9 +91,12 @@
 # Odoo docker image
 - name: pull odoo docker image
   docker_image:
+    build:
+      path: /home/docker/odootest/odoo
+      pull: yes
     name: filament/odoo:{{ odoo_image_tag | default(odoo_version) }}
-    path: /home/docker/odootest/odoo
-    force: yes
+    source: build
+    force_source: yes
   when: inventory_hostname in groups.docker_odoo
   tags: upgrade_odoo_test
 
@@ -93,7 +104,8 @@
 - name: pull odoo postgres docker image
   docker_image:
     name: postgres:{{ odoo_db_version }}-alpine
-    force: yes
+    source: pull
+    force_source: yes
   when: inventory_hostname in groups.docker_odoo
   tags: upgrade_odoo_test, pull_postgres
 
@@ -101,7 +113,8 @@
 - name: pull odoo mailhog docker image
   docker_image:
     name: mailhog/mailhog
-    force: yes
+    source: pull
+    force_source: yes
   when: inventory_hostname in groups.docker_odoo
   tags: upgrade_odoo_test, pull_mailhog
 
@@ -112,7 +125,7 @@
     files: whitelists.yaml
     project_name: whitelists
     pull: yes
-  when: inventory_hostname in groups.docker_odoo 
+  when: inventory_hostname in groups.docker_odoo | intersect(groups.docker_secure)
   tags: upgrade_odoo_test, pull_whitelists
 
 # Odoo test
@@ -126,7 +139,8 @@
 - name: pull odoo postfix docker image
   docker_image:
     name: tecnativa/postfix-relay
-    force: yes
+    source: pull
+    force_source: yes
   when: inventory_hostname in groups.docker_odoo and mailname is defined
   tags: upgrade_odoo_prod, pull_postfix
 
@@ -141,7 +155,8 @@
 - name: rebuild backup-odoo docker
   docker_image:
     name: tecnativa/duplicity:postgres
-    force: yes
+    source: pull
+    force_source: yes
   when: inventory_hostname in groups.docker_odoo | intersect(groups.maintenance_contract)
   tags: upgrade_odoo_prod, pull_backup_odoo
 
@@ -162,10 +177,11 @@
 # Backup file
 - name: rebuild backup-owncloud docker
   docker_image:
+    build:
+      path: /home/docker/backups
+      dockerfile: Dockerfile-mysql
     name: filament/duplicity:mysql
-    path: /home/docker/backups
-    dockerfile: Dockerfile-mysql
-    force: yes
+    source: build
+    force_source: yes
   when: inventory_hostname in groups.docker_owncloud | intersect(groups.maintenance_contract)
   tags: upgrade_owncloud, build_backup_oc
-

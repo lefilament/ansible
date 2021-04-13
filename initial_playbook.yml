@@ -10,7 +10,6 @@
   - { ansible_user: "{{ host_admin_user }}" }
   - { ansible_password: "{{ host_admin_password }}" }
   - { ansible_port: 22 }
-  - { ansible_connection: paramiko }
 
 - hosts: all
   become: yes
@@ -22,5 +21,4 @@
   - { ansible_user: "{{ host_admin_user }}" }
   - { ansible_password: "{{ host_admin_password }}" }
   - { ansible_port: 22 }
-  - { ansible_connection: paramiko }
   - { initial_playbook: true }

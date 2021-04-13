@@ -77,6 +77,9 @@ command[check_docker_framadate]=/usr/local/nagios/libexec/custom-plugin/check_do
 {% if inventory_hostname in groups.docker_gitlab %}
 command[check_docker_gitlab]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers gitlab.* --cpu 5:10 --memory 40:60:% --status running
 {% endif %}
+{% if inventory_hostname in groups.docker_jitsi %}
+command[check_docker_jitsi]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers jitsi.* --cpu 5:10 --memory 7:12:% --status running
+{% endif %}
 {% if inventory_hostname in groups.docker_mattermost %}
 command[check_docker_mattermost]=/usr/local/nagios/libexec/custom-plugin/check_docker.py --containers mattermost.* --cpu 5:10 --memory 7:12:% --status running
 {% endif %}

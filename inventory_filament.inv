@@ -44,6 +44,10 @@ NewHost3
 [docker_framadate]
 NewHost3
 
+[docker_jitsi]
+NewHost3
+
+
 [docker_mattermost]
 NewHost3
 

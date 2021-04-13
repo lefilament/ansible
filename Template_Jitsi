@@ -1,0 +1,9 @@
+## Jitsi Configuration
+# Jitsi URL
+jitsi_url: "{{ SERVER_jitsi_url }}"
+# Jitsi pad URL
+jitsi_pad_url: "{{ SERVER_jitsi_pad_url }}"
+# Jitsi internal secrets
+jibri_jicofo_comp_secret: "{{ SERVER_jibri_jicofo_comp_secret }}"
+jibri_jicofo_auth_pass: "{{ SERVER_jibri_jicofo_auth_pass }}"
+jitsi_jvb_auth_pass: "{{ SERVER_jitsi_jvb_auth_pass }}"

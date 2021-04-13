@@ -30,13 +30,24 @@
   gather_facts: no
   become: yes
   roles:
-  - { role: docker_odoo, tags: docker_odoo }
+  - { role: docker_odoo_test, tags: docker_odoo_nonprod }
+
+- hosts: docker_odoo
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_odoo_prod, tags: [ docker_odoo, odoo_prod ] }
 
 - hosts: docker_nextcloud
   gather_facts: no
   become: yes
   roles:
   - { role: docker_nextcloud, tags: docker_nextcloud }
+
+- hosts: docker_nextcloud
+  gather_facts: no
+  become: yes
+  roles:
   - { role: docker_cloudaborative, tags: docker_cloudaborative }
 
 - hosts: docker_owncloud
@@ -75,6 +86,13 @@
   roles:
   - { role: docker_gitlab, tags: docker_gitlab }
 
+- hosts: docker_jitsi
+  gather_facts: no
+  become: yes
+  roles:
+  - { role: docker_jitsi, tags: docker_jitsi }
+
+- hosts: docker_mattermost
 - hosts: docker_mattermost
   gather_facts: no
   become: yes
