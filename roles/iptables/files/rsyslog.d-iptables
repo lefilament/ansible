@@ -1,3 +1,0 @@
-:msg,contains,"IPTables-Dropped: " /var/log/iptables.log
-:msg,contains,"IPTables6-Dropped: " /var/log/iptables.log
-& stop

@@ -1,3 +1,2 @@
-# Nagios URL (only sub.domain without https:// in front)
+# Nagios URL
 nagios_url: "{{ SERVER_nagios_url }}"
-

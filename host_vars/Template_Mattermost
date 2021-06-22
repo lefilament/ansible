@@ -1,8 +1,9 @@
 ## Mattermost configuration
-# Mattermost URL (only sub.domain without https:// in front)
+# Mattermost URL
 mm_url: "{{ SERVER_mm_url }}"
 # Mattermost DB
 mm_db_name: "{{ SERVER_mm_db_name }}"
 mm_db_user: "{{ SERVER_mm_db_user }}"
 mm_db_pass: "{{ SERVER_mm_db_pass }}"
-
+# For maintenance only - Backup password
+# mm_backup_pass: "{{ SERVER_mm_backup_pass | default(mm_db_pass) }}"

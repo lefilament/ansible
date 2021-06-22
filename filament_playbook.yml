@@ -1,155 +1,66 @@
 ---
 
 - hosts: all
-  become: yes
   roles:
   - { role: init_server, tags: init }
-  - { role: iptables }
-  vars:
-  - { no_fail2ban: true }
 
 - hosts: backup_server
-  gather_facts: no
-  become: yes
   roles:
   - { role: backup_server_conf, tags: backup }
 
 - hosts: docker
-  gather_facts: no
-  become: yes
   roles:
   - { role: docker_server, tags: docker }
 
 - hosts: docker_auth
-  gather_facts: no
-  become: yes
   roles:
   - { role: docker_auth, tags: docker_auth }
 
-- hosts: docker_odoo
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: docker_odoo_test, tags: docker_odoo_nonprod }
-
-- hosts: docker_odoo
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: docker_odoo_prod, tags: [ docker_odoo, odoo_prod ] }
-
-- hosts: docker_nextcloud
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: docker_nextcloud, tags: docker_nextcloud }
-
-- hosts: docker_nextcloud
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: docker_cloudaborative, tags: docker_cloudaborative }
-
-- hosts: docker_owncloud
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: docker_owncloud, tags: docker_owncloud }
-
 - hosts: docker_drawio
-  gather_facts: no
-  become: yes
   roles:
   - { role: docker_drawio, tags: docker_drawio }
 
-- hosts: docker_elk
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: docker_elk, tags: docker_elk }
-
 - hosts: docker_etherpad
-  gather_facts: no
-  become: yes
   roles:
   - { role: docker_etherpad, tags: docker_etherpad }
 
 - hosts: docker_framadate
-  gather_facts: no
-  become: yes
   roles:
   - { role: docker_framadate, tags: docker_framadate }
 
-- hosts: docker_gitlab
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: docker_gitlab, tags: docker_gitlab }
-
 - hosts: docker_jitsi
-  gather_facts: no
-  become: yes
   roles:
   - { role: docker_jitsi, tags: docker_jitsi }
 
-- hosts: docker_mattermost
-- hosts: docker_mattermost
-  gather_facts: no
-  become: yes
+- hosts: docker_nextcloud
   roles:
-  - { role: docker_mattermost, tags: docker_mattermost }
+  - { role: docker_nextcloud, tags: docker_nextcloud }
+
+- hosts: docker_odoo
+  roles:
+  - { role: docker_odoo, tags: docker_odoo }
+
+- hosts: docker_owncloud
+  roles:
+  - { role: docker_owncloud, tags: docker_owncloud }
 
 - hosts: docker_privatebin
-  gather_facts: no
-  become: yes
   roles:
   - { role: docker_privatebin, tags: docker_privatebin }
 
-- hosts: docker_tuleap
-  gather_facts: no
-  become: yes
+- hosts: gitlab
   roles:
-  - { role: docker_tuleap, tags: docker_tuleap }
+  - { role: gitlab, tags: gitlab }
 
-- hosts: odoo_server
-  gather_facts: no
-  become: yes
+- hosts: full_maintenance
   roles:
-  - { role: odoo_server, tags: odoo }
+  - { role: filebeat, tags: filebeat }
 
-- hosts: owncloud_server
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: owncloud, tags: owncloud } 
-
-- hosts: maintenance_contract
-  gather_facts: no
-  become: yes
-  roles:
-    - { role: filebeat, tags: filebeat }
-
-- hosts: nagios_server
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: nagios, tags: nagios }
-
-- hosts: all 
-  gather_facts: no
-  become: yes
+- hosts: all
   roles:
   - { role: nagios_nrpe, tags: nrpe }
-
-- hosts: docker
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: docker_server_step2, tags: docker }
-  - { role: iptables, tags: iptables }
+  - { role: server_security, tags: security }
 
 - hosts: docker_nagios
-  gather_facts: no
-  become: yes
   roles:
   - { role: docker_nagios, tags: docker_nagios }

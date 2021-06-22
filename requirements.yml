@@ -1,6 +1,37 @@
 ---
 collections:
-- ansible.posix
-- community.docker
-- community.general
-- community.postgresql
+  - ansible.posix
+  - community.docker
+  - community.general
+
+roles:
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/backup_server_conf
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_auth
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_drawio
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_etherpad
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_framadate
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_jitsi
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_nextcloud
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_odoo
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_owncloud
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_privatebin
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_server
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/filebeat
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/gitlab
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/init_server
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/server_security
+    scm: git

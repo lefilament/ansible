@@ -1,5 +1,5 @@
 ## Framadate configuration
-# Framadate URL (only sub.domain without https:// in front)
+# Framadate URL
 date_url: "{{ SERVER_date_url }}"
 # Framadate DB
 date_db_root: "{{ SERVER_date_db_root }}"
@@ -8,6 +8,8 @@ date_db_pass: "{{ SERVER_date_db_pass }}"
 # Framadate Admin Password
 date_admin_user: "{{ SERVER_date_admin_user }}"
 date_admin_pass: "{{ SERVER_date_admin_pass }}"
+# For maintenance only - Backup password
+# date_backup_pass: "{{ SERVER_date_backup_pass | default(date_db_pass) }}"
 
 
 ## Mail server configuration - for Framadate
@@ -21,4 +23,3 @@ smtpport: 465
 smtpuser: "{{ SERVER_mail_date_user }}"
 # SMTP password
 smtppass: "{{ SERVER_mail_date_pass }}"
-

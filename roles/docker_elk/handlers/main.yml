@@ -1,7 +1,0 @@
----
-
-- name: start elk docker
-  docker_compose:
-    project_src: /home/docker/elk
-    remove_orphans: yes
-    restarted: yes

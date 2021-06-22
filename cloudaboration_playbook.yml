@@ -1,7 +1,0 @@
----
-
-- hosts: docker_nextcloud
-  become: yes
-  roles:
-  - { role: docker_cloudaborative }
-

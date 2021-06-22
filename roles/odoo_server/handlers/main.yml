@@ -1,7 +1,0 @@
----
-
-- name: restart-odoo
-  service: name="{{ odoo_config_name }}" state=restarted
-
-- name: restart nginx
-  service: name=nginx state=restarted 

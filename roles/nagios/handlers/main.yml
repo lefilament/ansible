@@ -1,7 +1,0 @@
----
-
-- name: restart nagios
-  service: name=nagios state=restarted
-
-- name: restart nginx
-  service: name=nginx state=restarted

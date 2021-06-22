@@ -1,6 +1,0 @@
----
-
-- hosts: docker_odoo
-  become: yes
-  roles:
-  - { role: docker_odoo_restart }

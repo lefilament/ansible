@@ -1,7 +1,171 @@
 ---
 
 - hosts: docker
-  gather_facts: no
-  become: yes
-  roles:
-  - { role: docker_upgrade_image }
+  gather_facts: false
+  handlers:
+  - name: set trusted domain
+    command: docker exec -u www-data nextcloud php occ --no-warnings "config:system:set" trusted_domains 1 --value="{{ cloud_url }}"
+
+  - name: overwrite protocol
+    command: docker exec -u www-data nextcloud php occ --no-warnings "config:system:set" overwriteprotocol --value="https"
+  tasks:
+  ## Proxy
+  - name: restart proxy dockers
+    docker_compose:
+      project_src: /home/docker/inverseproxy
+      pull: true
+    when: inventory_hostname in groups.docker
+    tags: upgrade_proxy
+
+  # Auth images
+  # OpenLDAP
+  - name: pull auth OpenLDAP docker image
+    docker_image:
+      name: lefilament/openldap
+      source: pull
+      force_source: true
+    when: inventory_hostname in groups.docker_auth
+    tags: upgrade_auth, pull_openldap
+  # PhpLDAPAdmin
+  - name: pull auth PhpLDAPAdmin docker image
+    docker_image:
+      name: osixia/phpldapadmin
+      source: pull
+      force_source: true
+    when: inventory_hostname in groups.docker_auth
+    tags: upgrade_auth, pull_phpldapadmin
+  # LemonLDAP
+  - name: rebuild auth sso Docker
+    docker_image:
+      build:
+        path: /home/docker/auth/sso
+        pull: true
+      name: filament/lemonldap:1.9-debian
+      source: build
+      force_source: true
+    when: inventory_hostname in groups.docker_auth
+    tags: upgrade_auth, build_lemonldap
+  # Auth
+  - name: restart auth dockers
+    docker_compose:
+      project_src: /home/docker/auth
+    when: inventory_hostname in groups.docker_auth
+    tags: upgrade_auth
+
+  # Nagios images
+  # Nagios
+  - name: pull nagios docker image
+    docker_compose:
+      project_src: /home/docker/nagios/
+      pull: true
+    when: inventory_hostname in groups.docker_nagios
+    tags: upgrade_nagios
+
+  ## NextCloud images
+  # Nextcloud
+  - name: pull nextcloud docker images
+    docker_compose:
+      project_src: /home/docker/
+      files: nextcloud.yaml
+      project_name: nextcloud
+      pull: true
+    async: 120
+    poll: 10
+    when: inventory_hostname in groups.docker_nextcloud and not ansible_check_mode
+    tags: upgrade_nextcloud
+    notify:
+    - set trusted domain
+    - overwrite protocol
+  # Backup
+  - name: rebuild backup-nextcloud docker
+    docker_image:
+      build:
+        path: /home/docker/backups
+        dockerfile: Dockerfile-mysql
+        pull: true
+      name: filament/duplicity:mysql
+      source: build
+      force_source: true
+    when: inventory_hostname in groups.docker_nextcloud | intersect(groups.maintenance_contract)
+    tags: upgrade_nextcloud, build_backup_nc
+
+  ## Odoo
+  # Odoo image is to be pulled / rebuilt using docker_odoo_operations_playbook
+  # only non Odoo imagesare included here below
+  # Postgres
+  - name: pull odoo postgres docker image
+    docker_image:
+      name: postgres:{{ odoo_db_version }}-alpine
+      source: pull
+      force_source: true
+    when: inventory_hostname in groups.docker_odoo
+    tags: upgrade_odoo_test, pull_postgres
+  # Mailhog
+  - name: pull odoo mailhog docker image
+    docker_image:
+      name: mailhog/mailhog
+      source: pull
+      force_source: true
+    when: inventory_hostname in groups.docker_odoo
+    tags: upgrade_odoo_test, pull_mailhog
+  # Whitelists
+  - name: pull and restart odoo docker whitelists
+    docker_compose:
+      project_src: /home/docker
+      files: whitelists.yaml
+      project_name: whitelists
+      pull: true
+    when: inventory_hostname in groups.docker_odoo and restrict_internet_access and whitelisted_urls is defined
+    tags: upgrade_odoo_test, pull_whitelists
+  # Odoo test
+  - name: restart odoo test dockers
+    docker_compose:
+      project_src: /home/docker/odootest
+    when: inventory_hostname in groups.docker_odoo
+    tags: upgrade_odoo_test
+  # Postfix relay
+  - name: pull odoo postfix docker image
+    docker_image:
+      name: tecnativa/postfix-relay
+      source: pull
+      force_source: true
+    when: inventory_hostname in groups.docker_odoo and mailname is defined
+    tags: upgrade_odoo_prod, pull_postfix
+  # Odoo prod
+  - name: restart odoo prod dockers
+    docker_compose:
+      project_src: /home/docker/odoo
+    when: inventory_hostname in groups.docker_odoo
+    tags: upgrade_odoo_prod
+  # Backups
+  - name: rebuild backup-odoo docker
+    docker_image:
+      name: tecnativa/duplicity:postgres
+      source: pull
+      force_source: true
+    when: inventory_hostname in groups.docker_odoo | intersect(groups.maintenance_contract)
+    tags: upgrade_odoo_prod, pull_backup_odoo
+
+  ## Owncloud images
+  # Owncloud docker image
+  - name: pull owncloud docker images
+    docker_compose:
+      project_src: /home/docker/
+      files: owncloud.yaml
+      project_name: owncloud
+      pull: true
+    async: 120
+    poll: 10
+    when: inventory_hostname in groups.docker_owncloud and not ansible_check_mode
+    tags: upgrade_owncloud
+  # Backup file
+  - name: rebuild backup-owncloud docker
+    docker_image:
+      build:
+        path: /home/docker/backups
+        dockerfile: Dockerfile-mysql
+      name: filament/duplicity:mysql
+      source: build
+      force_source: true
+    when: inventory_hostname in groups.docker_owncloud | intersect(groups.maintenance_contract)
+    tags: upgrade_owncloud, build_backup_oc

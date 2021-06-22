@@ -1,4 +1,5 @@
 ## Privatebin configuration
-# Privatebin URL (only sub.domain without https:// in front)
+# Privatebin URL
 privatebin_url: "{{ SERVER_privatebin_url }}"
-
+# For maintenance only - Backup password
+# privatebin_backup_pass: "{{ SERVER_privatebin_backup_pass | default(srv_proxy_pass) }}"

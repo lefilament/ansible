@@ -3,4 +3,5 @@
 tuleap_url: "{{ lf_tuleap_url }}"
 # Tuleap DB
 tuleap_db_root_pass: "{{ lf_tuleap_db_root_pass }}"
-
+# For maintenance only - Backup password
+# tuleap_backup_pass: "{{ SERVER_tuleap_backup_pass | default(tuleap_db_root_pass) }}"

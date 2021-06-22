@@ -1,0 +1,240 @@
+---
+
+- hosts: docker_odoo
+  gather_facts: false
+  tasks:
+  - name: create templates directory
+    file:
+      name: templates
+      state: directory
+      mode: '0755'
+    connection: local
+    become: false
+    delegate_to: localhost
+    tags: rebuild_pull_test, rebuild_pull_prod, rebuild_pull_dev, rebuild_pull_preprod
+
+  - name: get odoo template files
+    get_url:
+      url: "https://sources.le-filament.com/lefilament/ansible-roles/docker_odoo/-/raw/master/templates/{{ item }}"
+      dest: "templates/{{ item }}"
+      mode: '0644'
+    with_items:
+      - Dockerfile.j2
+      - repos.yaml.j2
+      - repos-addons.yaml.j2
+    connection: local
+    become: false
+    delegate_to: localhost
+    tags: rebuild_pull_test, rebuild_pull_prod, rebuild_pull_dev, rebuild_pull_preprod
+
+  - name: pull odoo docker ML image
+    docker_image:
+      name: lefilament/odoo:{{ odoo_version }}_ml
+      source: pull
+      force_source: true
+    when: odoo_multilingual is defined and odoo_multilingual
+    tags: rebuild_pull_test, rebuild_pull_prod, rebuild_pull_dev, rebuild_pull_preprod
+
+  - name: pull odoo docker python3.6 image
+    docker_image:
+      name: lefilament/odoo:{{ odoo_version }}_py3.6
+      source: pull
+      force_source: true
+    when: odoo_python36 is defined and odoo_python36
+    tags: rebuild_pull_test, rebuild_pull_prod, rebuild_pull_dev, rebuild_pull_preprod
+
+  - name: pull odoo docker image
+    docker_image:
+      name: lefilament/odoo:{{ odoo_version }}
+      source: pull
+      force_source: true
+    when: (odoo_multilingual is not defined or not odoo_multilingual) and (odoo_python36 is not defined or not odoo_python36)
+    tags: rebuild_pull_test, rebuild_pull_prod, rebuild_pull_dev, rebuild_pull_preprod
+
+  - name: set repos.yaml variables from template
+    template:
+      src: "templates/repos.yaml.j2"
+      dest: "/home/docker/{{ item.dir }}/odoo/private/repos.yaml"
+      owner: root
+      group: root
+      mode: '0644'
+    with_items: '{{ odoo_nonprod_instances | default([]) }}'
+    loop_control:
+      label: '{{ item.name }}'
+    tags: rebuild_pull_test, rebuild_test, rebuild_pull_preprod, rebuild_preprod, rebuild_pull_dev, rebuild_dev
+
+  - name: set repos-addons.yaml variables from template
+    template:
+      src: "templates/repos-addons.yaml.j2"
+      dest: "/home/docker/{{ item.dir }}/odoo/private/repos-addons.yaml"
+      owner: root
+      group: root
+      mode: '0644'
+    with_items: '{{ odoo_nonprod_instances | default([]) }}'
+    loop_control:
+      label: '{{ item.name }}'
+    tags: rebuild_pull_test, rebuild_test, rebuild_pull_preprod, rebuild_preprod, rebuild_pull_dev, rebuild_dev
+
+  - name: copy Dockerfile to retrieve private repos and extra OCA ones
+    template:
+      src: "templates/Dockerfile.j2"
+      dest: "/home/docker/{{ item.dir }}/odoo/Dockerfile"
+      owner: root
+      group: root
+      mode: '0644'
+    with_items: '{{ odoo_nonprod_instances | default([]) }}'
+    loop_control:
+      label: '{{ item.name }}'
+    tags: rebuild_pull_test, rebuild_test, rebuild_pull_preprod, rebuild_preprod, rebuild_pull_dev, rebuild_dev
+
+  - name: rebuild odoo docker test
+    docker_compose:
+      project_src: /home/docker/odootest/
+      build: true
+      nocache: true
+      recreate: always
+      restarted: true
+      remove_orphans: true
+    async: 600
+    poll: 10
+    when: not ansible_check_mode
+    tags: rebuild_pull_test, rebuild_test
+
+  - name: rebuild odoo docker preprod
+    docker_compose:
+      project_src: /home/docker/odoopreprod/
+      build: true
+      nocache: true
+      recreate: always
+      restarted: true
+      remove_orphans: true
+    async: 600
+    poll: 10
+    when: not ansible_check_mode
+    tags: rebuild_pull_preprod, rebuild_preprod
+
+  - name: rebuild odoo docker dev
+    docker_compose:
+      project_src: /home/docker/odoodev/
+      build: true
+      nocache: true
+      recreate: always
+      restarted: true
+      remove_orphans: true
+    async: 600
+    poll: 10
+    when: not ansible_check_mode
+    tags: rebuild_pull_dev, rebuild_dev
+
+  - name: restore prod database on test instance
+    command: docker-compose -f /home/docker/backups/restore-odoo_test.yaml  run --rm restore_test
+    async: 600
+    poll: 10
+    tags: restart_test_on_prod_db
+
+  - name: restart odoo docker test
+    docker_compose:
+      project_src: /home/docker/odootest/
+      remove_orphans: true
+      recreate: always
+      restarted: true
+    tags: restart_test, restart_test_on_prod_db
+
+  - name: restore prod database on preprod instance
+    command: docker-compose -f /home/docker/backups/restore-odoo_preprod.yaml  run --rm restore_test
+    async: 600
+    poll: 10
+    tags: restart_preprod_on_prod_db
+
+  - name: restart odoo docker test
+    docker_compose:
+      project_src: /home/docker/odootest/
+      remove_orphans: true
+      recreate: always
+      restarted: true
+    tags: restart_preprod, restart_preprod_on_prod_db
+
+  - name: restore prod database on dev instance
+    command: docker-compose -f /home/docker/backups/restore-odoo_dev.yaml  run --rm restore_test
+    async: 600
+    poll: 10
+    tags: restart_dev_on_prod_db
+
+  - name: restart odoo docker test
+    docker_compose:
+      project_src: /home/docker/odoodev/
+      remove_orphans: true
+      recreate: always
+      restarted: true
+    tags: restart_dev, restart_dev_on_prod_db
+
+  - name: restart odoo docker whitelists
+    docker_compose:
+      project_src: /home/docker
+      files: whitelists.yaml
+      project_name: whitelists
+      recreate: always
+      restarted: true
+    tags: restart_whitelists
+
+  - name: Copy prod image in test
+    docker_image:
+      name: filament/odoo:{{ odoo_version }}
+      repository: filament/odoo:{{ odoo_nonprod_instances[0]['image_version'] }}test
+      source: local
+    when: odoo_nonprod_instances is defined and odoo_prod is defined
+    tags: prod_image_to_test
+
+  - name: Copy test image in prod
+    docker_image:
+      force_tag: true
+      name: filament/odoo:{{ odoo_nonprod_instances[0]['image_version'] }}test
+      repository: filament/odoo:{{ odoo_version }}
+      source: local
+    when: odoo_nonprod_instances is defined and odoo_prod is defined
+    tags: test_image_to_prod, restart_prod_on_test_image
+
+  - name: restart odoo docker prod
+    docker_compose:
+      project_src: /home/docker/odoo/
+      remove_orphans: true
+      recreate: always
+      restarted: true
+    tags: restart_prod, restart_prod_on_test_image
+
+  - name: set repos variables from template
+    template:
+      src: "templates/repos.yaml.j2"
+      dest: "/home/docker/odoo/odoo/private/repos.yaml"
+      owner: root
+      group: root
+      mode: '0644'
+    vars:
+      item: "{{ odoo_prod }}"
+    when: odoo_nonprod_instances is not defined and odoo_prod is defined
+    tags: rebuild_pull_prod, rebuild_prod
+
+  - name: set repos-addons variables from template
+    template:
+      src: "templates/repos-addons.yaml.j2"
+      dest: "/home/docker/odoo/odoo/private/repos-addons.yaml"
+      owner: root
+      group: root
+      mode: '0644'
+    vars:
+      item: "{{ odoo_prod }}"
+    when: odoo_nonprod_instances is not defined and odoo_prod is defined
+    tags: rebuild_pull_prod, rebuild_prod
+
+  - name: rebuild odoo docker prod
+    docker_compose:
+      project_src: /home/docker/odoo/
+      build: true
+      nocache: true
+      recreate: always
+      restarted: true
+      remove_orphans: true
+    async: 600
+    poll: 10
+    when: not ansible_check_mode and odoo_nonprod_instances is not defined and odoo_prod is defined
+    tags: rebuild_pull_prod, rebuild_prod

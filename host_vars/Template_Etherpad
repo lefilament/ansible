@@ -1,5 +1,5 @@
 ## Etherpad configuration
-# Etherpad URL (only sub.domain without https:// in front)
+# Etherpad URL
 pad_url: "{{ SERVER_pad_url }}"
 # Etherpad DB
 pad_db_name: "{{ SERVER_pad_db_name }}"
@@ -7,4 +7,5 @@ pad_db_user: "{{ SERVER_pad_db_user }}"
 pad_db_pass: "{{ SERVER_pad_db_pass }}"
 # Etherpad Admin Password
 pad_admin_pass: "{{ SERVER_pad_admin_pass }}"
-
+# For maintenance only - Backup password
+# pad_backup_pass: "{{ SERVER_pad_backup_pass | default(pad_db_pass) }}"

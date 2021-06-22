@@ -1,2 +1,0 @@
-[Definition]
-failregex = ^<HOST> - .+ "(GET|POST|HEAD) .+" 401 .+$

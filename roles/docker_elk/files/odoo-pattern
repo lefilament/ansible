@@ -1,5 +1,0 @@
-WERKZEUGREQUESTTIMESTAMP %{MONTHDAY}/%{MONTH}/%{YEAR} %{TIME}
-WERKZEUGREQUEST %{IPORHOST:source.address} %{USER:ident} %{USER:auth} \[%{WERKZEUGREQUESTTIMESTAMP:request_timestamp}\] "%{WORD:http.request.method} %{URIPATHPARAM:url.path} HTTP/%{NUMBER:http.version}" %{NUMBER:http.response.status_code} - (?:-|(%{GREEDYDATA}m)?%{NUMBER:count_sql_queries}(%{GREEDYDATA}m)?) (?:-|(%{GREEDYDATA}m)?%{NUMBER:duration_sql}(%{GREEDYDATA}m)?) (?:-|(%{GREEDYDATA}m)?%{NUMBER:duration_nosql}(%{GREEDYDATA}m)?)
-INTERNALREQUEST %{IPORHOST:source.address} %{USER:ident} %{USER:auth} \[%{TIMESTAMP_ISO8601:request_timestamp}\] "%{WORD:http.request.method} %{URIPATHPARAM:url.path} HTTP/%{NUMBER:http.version}" %{NUMBER:http.response.status_code} (?:-|%{NUMBER:http.response.body.bytes}) (?:-|%{NUMBER:http.request.time})
-ODOOMISC %{GREEDYDATA}
-ODOOLOG %{TIMESTAMP_ISO8601:timestamp} %{POSINT:process.pid} %{GREEDYDATA}m%{LOGLEVEL:log.level}%{GREEDYDATA}m (?:%{USERNAME:postgresql.log.database}|\?) %{PROG:module}: (?:%{WERKZEUGREQUEST}|%{ODOOMISC:misc})
