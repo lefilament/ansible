@@ -12,12 +12,24 @@ NewHost2
 [vps_server]
 NewHost3
 
-[maintenance_contract]
+[maintenance_contract:children]
+full_maintenance
+limited_maintenance
+
+[full_maintenance]
 NewHost3
+
+[limited_maintenance]
 NewHost2
 
-[docker]
+[docker:children]
+docker_restrict_internet_access
+docker_direct_internet_access
+
+[docker_direct_internet_access]
 NewHost2
+
+[docker_restrict_internet_access]
 NewHost3
 
 [docker_odoo]
@@ -46,7 +58,6 @@ NewHost3
 
 [docker_jitsi]
 NewHost3
-
 
 [docker_mattermost]
 NewHost3

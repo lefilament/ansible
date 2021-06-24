@@ -17,6 +17,8 @@ roles:
     scm: git
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_jitsi
     scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_nagios
+    scm: git
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_nextcloud
     scm: git
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_odoo
@@ -32,6 +34,8 @@ roles:
   - src: https://sources.le-filament.com/lefilament/ansible-roles/gitlab
     scm: git
   - src: https://sources.le-filament.com/lefilament/ansible-roles/init_server
+    scm: git
+  - src: https://sources.le-filament.com/lefilament/ansible-roles/nagios_nrpe
     scm: git
   - src: https://sources.le-filament.com/lefilament/ansible-roles/server_security
     scm: git
