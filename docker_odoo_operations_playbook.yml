@@ -11,7 +11,7 @@
     connection: local
     become: false
     delegate_to: localhost
-    tags: rebuild_pull_test, rebuild_pull_prod, rebuild_pull_dev, rebuild_pull_preprod
+    tags: rebuild_pull_test, rebuild_test, rebuild_pull_preprod, rebuild_preprod, rebuild_pull_dev, rebuild_dev, rebuild_pull_preprod, rebuild_prod
 
   - name: get odoo template files
     get_url:
@@ -25,7 +25,7 @@
     connection: local
     become: false
     delegate_to: localhost
-    tags: rebuild_pull_test, rebuild_pull_prod, rebuild_pull_dev, rebuild_pull_preprod
+    tags: rebuild_pull_test, rebuild_test, rebuild_pull_preprod, rebuild_preprod, rebuild_pull_dev, rebuild_dev, rebuild_pull_preprod, rebuild_prod
 
   - name: pull odoo docker ML image
     docker_image:
