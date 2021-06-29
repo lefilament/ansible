@@ -60,6 +60,11 @@ odoo_prod:
     ## (if URLs need to be accessible from both prod and non-prod instances, use whitelisted_urls instead)
     # extra_urls:
     #     - "{{ SERVER_sso_url }}"
+    ## OPTIONAL parameters for deploying another app (for instance a JS app)
+    # extra_app:
+    #     - name: odootest_app
+    #     - image: nginx 
+    #     - url: app-test.example.org
 
 odoo_nonprod_instances:
     - name: odoo_test
@@ -119,6 +124,11 @@ odoo_nonprod_instances:
                 - account_bank_statement_import_ofx
       extra_urls:
           - "{{ SERVER_sso_url }}"
+      ## OPTIONAL parameters for deploying another app (for instance a JS app)
+      # extra_app:
+      #     - name: odootest_app
+      #     - image: nginx
+      #     - url: app-test.example.org
 
 ## OPTIONAL - For maintenance only - Backup password
 # odoo_backup_pass: "{{ SERVER_odoo_backup_pass | default(odoo_prod.master_pass) }}"
@@ -193,6 +203,9 @@ odoo_nonprod_instances:
 ## OPTIONAL - update performance limits for Odoo (see https://www.odoo.com/documentation/14.0/developer/reference/cmdline.html)
 # odoo_limit_time_cpu: 300
 # odoo_limit_time_real: 600
+
+## OPTIONAL - Extra variables to be added in odoo.conf
+# odoo_extra_conf: "log_level = debug"
 
 ## OPTIONAL - Deploy Metabase
 # metabase: true
