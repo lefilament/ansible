@@ -1,0 +1,14 @@
+### REQUIRED
+namespace: remi_filament
+name: install_servers
+version: 1.0.0
+readme: README.md
+authors:
+    - Remi (Le Filament)
+description: This collection is basically the playbooks used by Le Filament for installing servers
+license:
+    - AGPL-3.0-or-later
+dependencies: {}
+repository: https://github.com/lefilament/ansible
+homepage: https://le-filament.com
+build_ignore: ['ansible.cfg']
