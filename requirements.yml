@@ -58,4 +58,4 @@ roles:
     version: v1.0.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/server_security
     scm: git
-    version: v1.0.0
+    version: v1.0.1
