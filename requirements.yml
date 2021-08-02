@@ -28,7 +28,7 @@ roles:
     version: v1.0.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_nagios
     scm: git
-    version: v1.0.1
+    version: v1.1.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_nextcloud
     scm: git
     version: v1.0.0
