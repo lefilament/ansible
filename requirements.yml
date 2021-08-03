@@ -13,16 +13,16 @@ roles:
     version: v1.0.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_auth
     scm: git
-    version: v1.0.0
+    version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_drawio
     scm: git
     version: v1.0.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_etherpad
     scm: git
-    version: v1.0.0
+    version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_framadate
     scm: git
-    version: v1.0.0
+    version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_jitsi
     scm: git
     version: v1.0.0
@@ -31,16 +31,16 @@ roles:
     version: v1.1.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_nextcloud
     scm: git
-    version: v1.0.0
+    version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_odoo
     scm: git
-    version: v1.0.0
+    version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_owncloud
     scm: git
-    version: v1.0.0
+    version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_privatebin
     scm: git
-    version: v1.0.0
+    version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_server
     scm: git
     version: v1.0.0
@@ -49,7 +49,7 @@ roles:
     version: v1.0.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/gitlab
     scm: git
-    version: v1.0.0
+    version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/init_server
     scm: git
     version: v1.0.0
