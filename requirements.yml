@@ -16,7 +16,7 @@ roles:
     version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_drawio
     scm: git
-    version: v1.0.0
+    version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_etherpad
     scm: git
     version: v1.0.1
@@ -31,31 +31,31 @@ roles:
     version: v1.1.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_nextcloud
     scm: git
-    version: v1.0.2
+    version: v1.0.3
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_odoo
     scm: git
-    version: v1.0.1
+    version: v1.0.6
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_owncloud
     scm: git
-    version: v1.0.1
+    version: v1.0.2
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_privatebin
     scm: git
     version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_server
     scm: git
-    version: v1.0.0
+    version: v1.2.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/filebeat
     scm: git
     version: v1.0.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/gitlab
     scm: git
-    version: v1.0.1
+    version: v1.0.2
   - src: https://sources.le-filament.com/lefilament/ansible-roles/init_server
     scm: git
     version: v1.0.0
   - src: https://sources.le-filament.com/lefilament/ansible-roles/nagios_nrpe
     scm: git
-    version: v1.0.0
+    version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/server_security
     scm: git
     version: v1.0.1
