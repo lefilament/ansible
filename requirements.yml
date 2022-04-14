@@ -34,7 +34,7 @@ roles:
     version: v1.0.3
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_odoo
     scm: git
-    version: v1.0.6
+    version: v1.0.8
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_owncloud
     scm: git
     version: v1.0.2
@@ -43,7 +43,7 @@ roles:
     version: v1.0.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_server
     scm: git
-    version: v1.2.0
+    version: v1.2.1
   - src: https://sources.le-filament.com/lefilament/ansible-roles/filebeat
     scm: git
     version: v1.0.0
