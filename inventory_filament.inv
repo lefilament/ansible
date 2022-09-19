@@ -1,10 +1,6 @@
 [servers:children]
 vps_server
-physical_server
 dedicated_server
-
-[physical_server]
-NewHost1
 
 [dedicated_server]
 NewHost2
@@ -12,14 +8,7 @@ NewHost2
 [vps_server]
 NewHost3
 
-[maintenance_contract:children]
-full_maintenance
-limited_maintenance
-
-[full_maintenance]
-NewHost3
-
-[limited_maintenance]
+[gatewayed]
 NewHost2
 
 [docker:children]
@@ -59,17 +48,18 @@ NewHost3
 [docker_jitsi]
 NewHost3
 
-[docker_mattermost]
-NewHost3
-
-[docker_gitlab]
-NewHost3
-
 [docker_privatebin]
 NewHost3
 
-[docker_tuleap]
+[gitlab]
 NewHost3
+
+[maintenance_contract:children]
+full_maintenance
+
+[full_maintenance]
+NewHost3
+
 
 [odoo_server]
 NewHost1
@@ -79,9 +69,3 @@ NewHost1
 
 [backup_server]
 BackupHost1
-
-[extradisk_vps]
-BackupHost1
-
-[nagios_server]
-NewHost1

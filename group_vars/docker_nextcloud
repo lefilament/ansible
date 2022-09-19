@@ -1,0 +1,4 @@
+---
+
+nextcloud_db_version: '10.7'
+nextcloud_version: '23.0.5'

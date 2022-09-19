@@ -11,6 +11,8 @@ odoo_prod:
     db_pass: "{{ SERVER_odoo_db_pass }}"
     # PROD Database name
     db: "{{ SERVER_odoo_db_name }}"
+    ## OPTIONAL - use this variable to force using multiprocessing iso multithreading
+    # force_odoo_workers: True
     ## OPTIONAL - only needed if no nonprod_instances are defined
     ## Custom modules Le Filament (one module per repo)
     # custom_modules:
@@ -59,7 +61,8 @@ odoo_prod:
     ## OPTIONAL extra_urls to be accessible from this Odoo intance only
     ## (if URLs need to be accessible from both prod and non-prod instances, use whitelisted_urls instead)
     # extra_urls:
-    #     - "{{ SERVER_sso_url }}"
+    #     - url: "{{ SERVER_sso_url }}"
+    #       port: 443
     ## OPTIONAL parameters for deploying another app (for instance a JS app)
     # extra_app:
     #     - name: odootest_app
@@ -82,6 +85,8 @@ odoo_nonprod_instances:
       ## TEST Database Name
       db: "{{ SERVER_odoo_db_name_test }}"
       image_version: "{{ odoo_version }}"
+      ## OPTIONAL - use this variable to force using multiprocessing iso multithreading
+      # force_odoo_workers: True
       ## Custom modules Le Filament (one module per repo)
       custom_modules:
           - automatic_bank_statement_import
@@ -201,8 +206,12 @@ odoo_nonprod_instances:
 # odoo_extra_host: "docs.example.org:172.17.0.1"
 
 ## OPTIONAL - update performance limits for Odoo (see https://www.odoo.com/documentation/14.0/developer/reference/cmdline.html)
+# odoo_db_maxconn: 64
 # odoo_limit_time_cpu: 300
 # odoo_limit_time_real: 600
+
+## OPTIONAL - update performance limits for Postgres (see https://www.postgresql.org/docs/13/runtime-config-connection.html)
+# postgres_options: "-c max_connections=100"
 
 ## OPTIONAL - Extra variables to be added in odoo.conf
 # odoo_extra_conf: "log_level = debug"
