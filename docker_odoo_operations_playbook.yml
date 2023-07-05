@@ -1,347 +1,226 @@
 ---
 
 - hosts: docker_odoo
+  name: Docker Odoo Operations Playbook
   gather_facts: false
+  # Define variables used in this playbook and templates.
   vars:
-  - { odoo_nonprod_instance: "odoo_test" }
+      instance: "odootest"
+      item: "{{ {'key': instance, 'value': odoo_instances[instance]} }}"
+      instance_odoo_setup: "{{ odoo_setup_conf[item.value.odoo_setup_version | default(odoo_setup_version)] }}"
+      pull: true
+
   tasks:
-  - name: create templates directory
-    file:
-      name: templates
-      state: directory
-      mode: '0755'
-    connection: local
-    become: false
-    delegate_to: localhost
-    tags: rebuild_pull_nonprod, rebuild_nonprod, rebuild_pull_prod, rebuild_prod
+      # Restart whitelist containers.
+      - name: Restart whitelist containers
+        community.docker.docker_compose:
+            project_src: /home/docker
+            files: whitelists.yaml
+            project_name: whitelists
+            recreate: always
+            restarted: true
+        tags: restart_whitelists
 
-  - name: get odoo template files
-    get_url:
-      url: "https://sources.le-filament.com/lefilament/ansible-roles/docker_odoo/-/raw/master/templates/{{ item }}"
-      dest: "templates/{{ item }}"
-      mode: '0644'
-    with_items:
-      - Dockerfile.j2
-      - repos.yaml.j2
-      - repos-addons.yaml.j2
-    connection: local
-    become: false
-    delegate_to: localhost
-    tags: rebuild_pull_nonprod, rebuild_nonprod, rebuild_pull_prod, rebuild_prod
+      # Check if the selected Odoo instance support rebuild tasks. If not, exit playbook.
+      - name: Checks
+        when: not (item.value.image_instance | default(false) == item.key)
+        tags: rebuild
+        block:
+            - name: Failed cannot build
+              ansible.builtin.fail:
+                  msg: "{{ item.key }} instance cannot be built"
+            - name: Ends playbook
+              ansible.builtin.meta: end_play
 
-  - name: pull odoo docker ML image
-    docker_image:
-      name: lefilament/odoo:{{ odoo_version }}_ml
-      source: pull
-      force_source: true
-    when: odoo_multilingual is defined and odoo_multilingual
-    tags: rebuild_pull_nonprod, rebuild_pull_prod
+      # All tasks needed to rebuild an instance.
+      - name: "Rebuild instance {{ item.key }}"
+        when: item.value.image_instance | default(false) == item.key
+        tags: rebuild
+        block:
+            - name: Create templates directory
+              ansible.builtin.file:
+                  name: templates
+                  state: directory
+                  mode: '0755'
+              connection: local
+              become: false
+              delegate_to: localhost
 
-  - name: pull odoo docker python3.6 image
-    docker_image:
-      name: lefilament/odoo:{{ odoo_version }}_py3.6
-      source: pull
-      force_source: true
-    when: odoo_python36 is defined and odoo_python36
-    tags: rebuild_pull_nonprod, rebuild_pull_prod
+            - name: Get odoo template files
+              ansible.builtin.get_url:
+                  url: "https://sources.le-filament.com/lefilament/ansible-roles/docker_odoo/-/raw/master/templates/{{ file }}"
+                  dest: "templates/{{ file }}"
+                  mode: '0644'
+              with_items:
+                  - Dockerfile.j2
+                  - repos.yaml.j2
+                  - repos-addons.yaml.j2
+              loop_control:
+                  loop_var: file
+              connection: local
+              become: false
+              delegate_to: localhost
 
-  - name: pull odoo docker image
-    docker_image:
-      name: lefilament/odoo:{{ odoo_version }}
-      source: pull
-      force_source: true
-    when: (odoo_multilingual is not defined or not odoo_multilingual) and (odoo_python36 is not defined or not odoo_python36)
-    tags: rebuild_pull_nonprod, rebuild_pull_prod
+            # Only pull image if pull is true.
+            - name: Pull latest image
+              when: pull
+              block:
+                  - name: Pull odoo docker ML image
+                    community.docker.docker_image:
+                        name: lefilament/odoo:{{ instance_odoo_setup.odoo_version }}_ml
+                        source: pull
+                        force_source: true
+                    when: item.value.odoo_multilingual | default(false)
 
-  - name: set repos.yaml variables from template
-    template:
-      src: "templates/repos.yaml.j2"
-      dest: "/home/docker/{{ item.dir }}/odoo/private/repos.yaml"
-      owner: root
-      group: root
-      mode: '0644'
-    with_items: "{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | default([]) }}"
-    loop_control:
-      label: '{{ item.name }}'
-    tags: rebuild_pull_nonprod, rebuild_nonprod
+                  - name: Pull odoo docker python3.6 image
+                    community.docker.docker_image:
+                        name: lefilament/odoo:{{ instance_odoo_setup.odoo_version }}_py3.6
+                        source: pull
+                        force_source: true
+                    when: item.value.odoo_python36 | default(false)
 
-  - name: set repos-addons.yaml variables from template
-    template:
-      src: "templates/repos-addons.yaml.j2"
-      dest: "/home/docker/{{ item.dir }}/odoo/private/repos-addons.yaml"
-      owner: root
-      group: root
-      mode: '0644'
-    with_items: "{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | default([]) }}"
-    loop_control:
-      label: '{{ item.name }}'
-    tags: rebuild_pull_nonprod, rebuild_nonprod
+                  - name: Pull odoo docker image
+                    community.docker.docker_image:
+                        name: lefilament/odoo:{{ instance_odoo_setup.odoo_version }}
+                        source: pull
+                        force_source: true
+                    when: not (item.value.odoo_multilingual | default(false)) and not (item.value.odoo_python36 | default(false))
 
-  - name: copy Dockerfile to retrieve private repos and extra OCA ones
-    template:
-      src: "templates/Dockerfile.j2"
-      dest: "/home/docker/{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='dir') | first }}/odoo/Dockerfile"
-      owner: root
-      group: root
-      mode: '0644'
-    tags: rebuild_pull_nonprod, rebuild_nonprod
+            - name: Set repos variables from template
+              ansible.builtin.template:
+                  src: "templates/{{ file }}.j2"
+                  dest: "/home/docker/{{ item.key }}/odoo/private/{{ file }}"
+                  owner: root
+                  group: root
+                  mode: '0644'
+              with_items:
+                  - "repos.yaml"
+                  - "repos-addons.yaml"
+              loop_control:
+                  loop_var: file
 
-  - name: NONPROD copy private GitLab ssh keys file
-    copy:
-      content: "{{ lf_gitlab_ro_privkey }}"
-      dest: "/home/docker/{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='dir') | first }}/odoo/id_ed25519.sources"
-      owner: root
-      group: root
-      mode: '0400'
-    tags: rebuild_pull_nonprod, rebuild_nonprod
+            - name: Copy Dockerfile to retrieve private repos and extra OCA ones
+              ansible.builtin.template:
+                  src: "templates/Dockerfile.j2"
+                  dest: "/home/docker/{{ item.key }}/odoo/Dockerfile"
+                  owner: root
+                  group: root
+                  mode: '0644'
 
-  - name: rebuild odoo docker test
-    docker_compose:
-      project_src: "/home/docker/{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='dir') | first }}/"
-      build: true
-      nocache: true
-      recreate: never
-      restarted: false
-      remove_orphans: false
-    async: 600
-    poll: 10
-    when: not ansible_check_mode
-    tags: rebuild_pull_nonprod, rebuild_nonprod
+            - name: Cpy private GitLab ssh keys file
+              ansible.builtin.copy:
+                  content: "{{ lf_gitlab_ro_privkey }}"
+                  dest: "/home/docker/{{ item.key }}/odoo/id_ed25519.sources"
+                  owner: root
+                  group: root
+                  mode: '0400'
 
-  - name: install modules odoo docker test
-    shell:
-      chdir: "/home/docker/{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='dir') | first }}/"
-      cmd: "docker-compose run --rm -l traefik.enable=false odoo odoo -d {{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='db') | first }} -i {{ odoo_modules_to_install }} --stop-after-init"
-    async: 600
-    poll: 10
-    register: test_shell_result_i
-    when: not ansible_check_mode and odoo_modules_to_update is not defined and odoo_modules_to_install is defined
-    tags: rebuild_pull_nonprod, rebuild_nonprod, update_nonprod
+            - name: Rebuild odoo docker instance
+              community.docker.docker_compose:
+                  project_src: "/home/docker/{{ instance }}/"
+                  build: true
+                  nocache: true
+                  recreate: never
+                  restarted: false
+                  remove_orphans: false
+              async: 600
+              poll: 10
+              when: not ansible_check_mode
 
-  - name: display install result test
-    debug:
-      var: test_shell_result_i.stderr_lines
-    when: test_shell_result_i.stderr_lines is defined
-    tags: rebuild_pull_nonprod, rebuild_nonprod, update_nonprod
+            - name: Remove ssh private keys
+              ansible.builtin.file:
+                  path: "/home/docker/{{ item.key }}/odoo/id_ed25519.sources"
+                  state: absent
+              when: inventory_hostname not in groups['maintenance_contract']
 
-  - name: update modules odoo docker test
-    shell:
-      chdir: "/home/docker/{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='dir') | first }}/"
-      cmd: "docker-compose run --rm -l traefik.enable=false odoo odoo -d {{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='db') | first }} -u {{ odoo_modules_to_update }} --stop-after-init"
-    async: 600
-    poll: 10
-    register: test_shell_result_u
-    when: not ansible_check_mode and odoo_modules_to_update is defined and odoo_modules_to_install is not defined
-    tags: rebuild_pull_nonprod, rebuild_nonprod, update_nonprod
+            - name: Remove intermediate image
+              community.docker.docker_prune:
+                  builder_cache: true
+                  images: true
+                  images_filters:
+                      label: stage=builder
+              when: inventory_hostname not in groups['maintenance_contract']
 
-  - name: display update result test
-    debug:
-      var: test_shell_result_u.stderr_lines
-    when: test_shell_result_u.stderr_lines is defined
-    tags: rebuild_pull_nonprod, rebuild_nonprod, update_nonprod
+      # Check if the selected Odoo instance support copy FROM TEST instance. If not, exit playbook.
+      - name: Copy test image to prod instance
+        when: item.value.prod_instance | default(false) == item.key
+        tags: test_image_to_prod, restart_prod_on_test_image
+        block:
+            - name: Check test image
+              when: item.value.image_instance is undefined
+              block:
+                  - name: Failed cannot copy image to prod
+                    ansible.builtin.fail:
+                        msg: "test image cannot be copied to prod instance"
+                  - name: End playbook
+                    ansible.builtin.meta: end_play
 
-  - name: install and update modules odoo docker test
-    shell:
-      chdir: "/home/docker/{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='dir') | first }}/"
-      cmd: "docker-compose run --rm -l traefik.enable=false odoo odoo -d {{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='db') | first }} -u {{ odoo_modules_to_update }} -i {{ odoo_modules_to_install }} --stop-after-init"
-    async: 600
-    poll: 10
-    register: test_shell_result_ui
-    when: not ansible_check_mode and odoo_modules_to_update is defined and odoo_modules_to_install is defined
-    tags: rebuild_pull_nonprod, rebuild_nonprod, update_nonprod
+            - name: Copy image to prod instance (selected instance is prod)
+              community.docker.docker_image:
+                  force_tag: true
+                  name: "filament/{{ item.value.image_instance }}:{{ instance_odoo_setup.odoo_version }}"
+                  repository: "filament/{{ item.key }}:{{ instance_odoo_setup.odoo_version }}"
+                  source: local
 
-  - name: display install and/or update result test
-    debug:
-      var: test_shell_result_ui.stderr_lines
-    when: test_shell_result_ui.stderr_lines is defined
-    tags: rebuild_pull_nonprod, rebuild_nonprod, update_nonprod
+      - name: "Update modules for instance {{ item.key }}"
+        when: not ansible_check_mode
+        tags: rebuild, restart_prod_on_test_image, update
+        block:
+            - name: Install modules odoo docker
+              ansible.builtin.command:
+                  chdir: "/home/docker/{{ item.key }}/"
+                  cmd: "docker-compose run --rm -l traefik.enable=false odoo odoo -d {{ item.value.db }} -i {{ modules_to_install }} --stop-after-init"
+              async: 600
+              poll: 10
+              register: test_cmd_result_i
+              when: modules_to_update is not defined and modules_to_install is defined
 
-  - name: restart odoo docker test
-    docker_compose:
-      project_src: "/home/docker/{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='dir') | first }}/"
-      recreate: always
-      restarted: true
-      remove_orphans: true
-    async: 600
-    poll: 10
-    when: not ansible_check_mode
-    tags: rebuild_pull_nonprod, rebuild_nonprod
+            - name: Display install result
+              ansible.builtin.debug:
+                  var: test_cmd_result_i.stderr_lines
+              when: test_cmd_result_i.stderr_lines is defined
 
-  - name: remove odoo_nonprod ssh private keys
-    file:
-      path: "/home/docker/{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='dir') | first }}/odoo/id_ed25519.sources"
-      state: absent
-    when: inventory_hostname not in groups['maintenance_contract']
-    tags: rebuild_pull_nonprod, rebuild_nonprod
+            - name: Update modules odoo docker
+              ansible.builtin.command:
+                  chdir: "/home/docker/{{ item.key }}/"
+                  cmd: "docker-compose run --rm -l traefik.enable=false odoo odoo -d {{ item.value.db }} -u {{ modules_to_update }} --stop-after-init"
+              async: 600
+              poll: 10
+              register: test_cmd_result_u
+              when: modules_to_update is defined and modules_to_install is not defined
 
-  - name: restore prod database on nonprod instance
-    command: docker-compose -f /home/docker/backups/restore-{{ odoo_nonprod_instance }}.yaml  run --rm restore_test
-    async: 600
-    poll: 10
-    tags: restart_nonprod_on_prod_db
+            - name: Display update result
+              ansible.builtin.debug:
+                  var: test_cmd_result_u.stderr_lines
+              when: test_cmd_result_u.stderr_lines is defined
 
-  - name: restart odoo docker nonprod
-    docker_compose:
-      project_src: /home/docker/{{ odoo_nonprod_instances | selectattr('name', '==', odoo_nonprod_instance) | map(attribute='dir') | first }}/
-      remove_orphans: true
-      recreate: always
-      restarted: true
-    tags: restart_nonprod, restart_nonprod_on_prod_db
+            - name: Install and update modules odoo docker
+              ansible.builtin.command:
+                  chdir: "/home/docker/{{ item.key }}/"
+                  cmd: "docker-compose run --rm -l traefik.enable=false odoo odoo -d {{ item.value.db }} -u {{ modules_to_update }} -i {{ modules_to_install }} --stop-after-init"
+              async: 600
+              poll: 10
+              register: test_cmd_result_ui
+              when: modules_to_update is defined and modules_to_install is defined
 
-  - name: restart odoo docker whitelists
-    docker_compose:
-      project_src: /home/docker
-      files: whitelists.yaml
-      project_name: whitelists
-      recreate: always
-      restarted: true
-    tags: restart_whitelists
+            - name: Display install and/or update result
+              ansible.builtin.debug:
+                  var: test_cmd_result_ui.stderr_lines
+              when: test_cmd_result_ui.stderr_lines is defined
 
-  - name: Copy prod image in test
-    docker_image:
-      name: filament/odoo:{{ odoo_version }}
-      repository: filament/odoo:{{ odoo_nonprod_instances[0]['image_version'] }}test
-      source: local
-    when: odoo_nonprod_instances is defined and odoo_prod is defined
-    tags: prod_image_to_test
+      - name: "Restore last prod database backup on instance {{ item.key }}"
+        ansible.builtin.command: docker-compose -f /home/docker/backups/restore-{{ item.key }}1.yaml  run --rm restore_test
+        async: 600
+        poll: 10
+        tags: restart_on_prod_db
 
-  - name: Copy test image in prod
-    docker_image:
-      force_tag: true
-      name: filament/odoo:{{ odoo_nonprod_instances[0]['image_version'] }}test
-      repository: filament/odoo:{{ odoo_version }}
-      source: local
-    when: odoo_nonprod_instances is defined and odoo_prod is defined
-    tags: test_image_to_prod, restart_prod_on_test_image
-
-  - name: set repos variables from template
-    template:
-      src: "templates/repos.yaml.j2"
-      dest: "/home/docker/odoo/odoo/private/repos.yaml"
-      owner: root
-      group: root
-      mode: '0644'
-    vars:
-      item: "{{ odoo_prod }}"
-    when: odoo_nonprod_instances is not defined and odoo_prod is defined
-    tags: rebuild_pull_prod, rebuild_prod
-
-  - name: set repos-addons variables from template
-    template:
-      src: "templates/repos-addons.yaml.j2"
-      dest: "/home/docker/odoo/odoo/private/repos-addons.yaml"
-      owner: root
-      group: root
-      mode: '0644'
-    vars:
-      item: "{{ odoo_prod }}"
-    when: odoo_nonprod_instances is not defined and odoo_prod is defined
-    tags: rebuild_pull_prod, rebuild_prod
-
-  - name: copy Dockerfile to retrieve private repos and extra OCA ones
-    template:
-      src: "templates/Dockerfile.j2"
-      dest: "/home/docker/odoo/odoo/Dockerfile"
-      owner: root
-      group: root
-      mode: '0644'
-    when: odoo_nonprod_instances is not defined and odoo_prod is defined
-    tags: rebuild_pull_prod, rebuild_prod
-
-  - name: PROD copy private GitLab ssh keys file
-    copy:
-      content: "{{ lf_gitlab_ro_privkey }}"
-      dest: "/home/docker/odoo/odoo/id_ed25519.sources"
-      owner: root
-      group: root
-      mode: '0400'
-    when: odoo_nonprod_instances is not defined and odoo_prod is defined
-    tags: rebuild_pull_prod, rebuild_prod
-
-  - name: rebuild odoo docker prod
-    docker_compose:
-      project_src: /home/docker/odoo/
-      build: true
-      nocache: true
-      recreate: never
-      restarted: false
-      remove_orphans: false
-    async: 600
-    poll: 10
-    when: not ansible_check_mode and odoo_nonprod_instances is not defined and odoo_prod is defined
-    tags: rebuild_pull_prod, rebuild_prod
-
-  - name: install modules odoo docker prod
-    shell:
-      chdir: "/home/docker/odoo/"
-      cmd: "docker-compose run --rm -l traefik.enable=false odoo odoo -d {{ odoo_prod.db }} -i {{ odoo_modules_to_install }} --stop-after-init"
-    async: 600
-    poll: 10
-    register: prod_shell_result_i
-    when: not ansible_check_mode and odoo_modules_to_update is not defined and odoo_modules_to_install is defined
-    tags: rebuild_pull_prod, rebuild_prod, update_prod, restart_prod_on_test_image
-
-  - name: display install result prod
-    debug:
-      var: prod_shell_result_i.stderr_lines
-    when: prod_shell_result_i.stderr_lines is defined
-    tags: rebuild_pull_prod, rebuild_prod, update_prod, restart_prod_on_test_image
-
-  - name: update modules odoo docker prod
-    shell:
-      chdir: "/home/docker/odoo/"
-      cmd: "docker-compose run --rm -l traefik.enable=false odoo odoo -d {{ odoo_prod.db }} -u {{ odoo_modules_to_update }} --stop-after-init"
-    async: 600
-    poll: 10
-    register: prod_shell_result_u
-    when: not ansible_check_mode and odoo_modules_to_update is defined and odoo_modules_to_install is not defined
-    tags: rebuild_pull_prod, rebuild_prod, update_prod, restart_prod_on_test_image
-
-  - name: display update result prod
-    debug:
-      var: prod_shell_result_u.stderr_lines
-    when: prod_shell_result_u.stderr_lines is defined
-    tags: rebuild_pull_prod, rebuild_prod, update_prod, restart_prod_on_test_image
-
-  - name: install and update modules odoo docker prod
-    shell:
-      chdir: "/home/docker/odoo/"
-      cmd: "docker-compose run --rm -l traefik.enable=false odoo odoo -d {{ odoo_prod.db }} -u {{ odoo_modules_to_update }} -i {{ odoo_modules_to_install }} --stop-after-init"
-    async: 600
-    poll: 10
-    register: prod_shell_result_ui
-    when: not ansible_check_mode and odoo_modules_to_update is defined and odoo_modules_to_install is defined
-    tags: rebuild_pull_prod, rebuild_prod, update_prod, restart_prod_on_test_image
-
-  - name: display update result prod
-    debug:
-      var: prod_shell_result_ui.stderr_lines
-    when: prod_shell_result_ui.stderr_lines is defined
-    tags: rebuild_pull_prod, rebuild_prod, update_prod, restart_prod_on_test_image
-
-  - name: restart odoo docker prod
-    docker_compose:
-      project_src: /home/docker/odoo/
-      recreate: always
-      restarted: true
-      remove_orphans: true
-    async: 600
-    poll: 10
-    when: not ansible_check_mode and odoo_prod is defined
-    tags: rebuild_pull_prod, rebuild_prod, update_prod, restart_prod, restart_prod_on_test_image
-
-  - name: remove odoo_prod ssh private keys
-    file:
-      path: "/home/docker/odoo/odoo/id_ed25519.sources"
-      state: absent
-    when: inventory_hostname not in groups['maintenance_contract'] and odoo_nonprod_instances is not defined and odoo_prod is defined
-    tags: rebuild_pull_prod, rebuild_prod
-
-  - name: remove intermediate image
-    docker_prune:
-      builder_cache: true
-      images: true
-      images_filters:
-        label: stage=builder
-    when: inventory_hostname not in groups['maintenance_contract']
-    tags: rebuild_pull_nonprod, rebuild_nonprod, rebuild_pull_prod, rebuild_prod
+      - name: "Restart instance {{ item.key }}"
+        community.docker.docker_compose:
+            project_src: "/home/docker/{{ item.key }}/"
+            recreate: always
+            restarted: true
+            remove_orphans: true
+        async: 600
+        poll: 10
+        when: not ansible_check_mode
+        tags: rebuild, restart, restart_on_prod_db, restart_prod_on_test_image

@@ -10,26 +10,26 @@ cloud_admin_user: "{{ SERVER_cloud_user }}"
 # Nextcloud Admin password
 cloud_admin_pass: "{{ SERVER_cloud_pass }}"
 # For maintenance only - Backup password
-#cloud_backup_pass: "{{ SERVER_cloud_backup_pass | default(cloud_db_pass) }}"
+# cloud_backup_pass: "{{ SERVER_cloud_backup_pass | default(cloud_db_pass) }}"
 # OPTIONAL - For allowing NextCloud to reach extra URLs
-#extra_cloud_urls:
+# extra_cloud_urls:
 #    - url: "mail.ovh.net"
 #      port: "465 587"
-#OPTIONAL - For setting extra vars in Nextcloud environment
-#extra_cloud_vars:
+# OPTIONAL - For setting extra vars in Nextcloud environment
+# extra_cloud_vars:
 #    - PHP_MEMORY_LIMIT=2G
 #    - PHP_UPLOAD_LIMIT=1G
 
 ## Document collaboration configuration
 # Document collaboration present for OnlyOffice ?
-#cloud_onlyoffice: true
+# cloud_onlyoffice: true
 # Document collaboration OnlyOffice URL
-#cloud_onlyoffice_url: "{{ SERVER_onlyoffice_url }}"
+# cloud_onlyoffice_url: "{{ SERVER_onlyoffice_url }}"
 
 # Document collaboration present for Collabora ?
-#cloud_collabora: true
+# cloud_collabora: true
 # Collabora admin user and password
-#cloud_collabora_admin_user: "{{ SERVER_collabora_admin_user }}"
-#cloud_collabora_admin_pass: "{{ SERVER_collabora_admin_pass }}"
+# cloud_collabora_admin_user: "{{ SERVER_collabora_admin_user }}"
+# cloud_collabora_admin_pass: "{{ SERVER_collabora_admin_pass }}"
 # Document collaboration Collabora URL
-#cloud_collabora_url: "{{ SERVER_collabora_url }}"
+# cloud_collabora_url: "{{ SERVER_collabora_url }}"

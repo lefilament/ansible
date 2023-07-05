@@ -1,0 +1,32 @@
+---
+
+- hosts: full_maintenance
+  name: Ubuntu Post-Upgrade Playbook
+  gather_facts: false
+  tasks:
+      - name: Update configuration files from Ubuntu 20
+        ansible.builtin.copy:
+            src: /etc/{{ item }}.dpkg-dist
+            dest: /etc/{{ item }}
+            owner: root
+            group: root
+            mode: 0644
+            remote_src: true
+            backup: true
+        with_items:
+            - services
+            - ssh/ssh_config
+        ignore_errors: true
+
+      - name: Update configuration files from Ubuntu 18
+        ansible.builtin.copy:
+            src: /etc/{{ item }}.dpkg-dist
+            dest: /etc/{{ item }}
+            owner: root
+            group: root
+            mode: 0640
+            remote_src: true
+            backup: true
+        with_items:
+            - audit/auditd.conf
+        ignore_errors: true

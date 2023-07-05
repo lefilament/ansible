@@ -1,4 +1,28 @@
 ---
 
-odoo_db_version: '13'
-odoo_version: '14.0'
+odoo_setup_version: '16'
+odoo_setup_conf:
+  16:
+    odoo_version: '16.0'
+    postgres_version: '15'
+    websocket_uri: 'websocket'
+  15:
+    odoo_version: '15.0'
+    postgres_version: '13'
+    websocket_uri: 'longpolling'
+  14:
+    odoo_version: '14.0'
+    postgres_version: '13'
+    websocket_uri: 'longpolling'
+  12:
+    odoo_version: '12.0'
+    postgres_version: '10'
+    websocket_uri: 'longpolling'
+  10:
+    odoo_version: '10.0'
+    postgres_version: '9.6'
+    websocket_uri: 'longpolling'
+
+backup_time_start: '23:00:00'
+backup_time_slot_duration: '4h 20m'
+backup_time_max_duration: '90m'

@@ -10,6 +10,9 @@ host_password: "{{ SERVER_srv_pass }}"
 host_admin_user: "{{ SERVER_srv_admin_user }}"
 # Admin password
 host_admin_password: "{{ SERVER_srv_admin_pass }}"
+# IPv6 manual configuration
+# ipv6_address: "{{ SERVER_srv_ipv6_address }}"
+# ipv6_gateway: "{{ SERVER_srv_ipv6_gateway }}"
 
 # OPTIONAL 2nd USER
 # host_user2: "{{ SERVER_srv_user2 }}"

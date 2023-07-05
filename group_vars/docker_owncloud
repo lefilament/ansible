@@ -1,5 +1,5 @@
 ---
 
-owncloud_version: '10.10.0'
+owncloud_version: '10.11.0'
 owncloud_db_version: 'latest'
 cloud_db_user: "owncloud"

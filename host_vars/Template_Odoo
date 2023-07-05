@@ -2,153 +2,68 @@
 
 # By default, an Odoo server is deployed with both prod and test instances.
 # By default, all variables for test instance are copied from prod one, but URL and database name
-odoo_prod:
-    # PROD URL (only sub.domain without https:// in front)
-    url: "{{ SERVER_odoo_url }}"
-    master_pass: "{{ SERVER_odoo_master_pass }}"
-    # Database identifiers user and password
-    db_user: "{{ SERVER_odoo_db_user }}"
-    db_pass: "{{ SERVER_odoo_db_pass }}"
-    # PROD Database name
-    db: "{{ SERVER_odoo_db_name }}"
-    ## OPTIONAL - use this variable to force using multiprocessing iso multithreading
-    # force_odoo_workers: True
-    ## OPTIONAL - only needed if no nonprod_instances are defined
-    ## Custom modules Le Filament (one module per repo)
-    # custom_modules:
-    #     - automatic_bank_statement_import
-    #     - lefilament_account
-    #     - lefilament_export_journal
-    #     - lefilament_generic_reports
-    ## OPTIONAL - only needed if no nonprod_instances are defined
-    ## Custom modules Le Filament (one module per repo and branch is specified instead of taking odoo_version by default)
-    # custom_modules_branch:
-    #     - repo: lefilament_account
-    #       branch: "{{ odoo_version }}"
-    ## OPTIONAL - only needed if no nonprod_instances are defined
-    ## OCA modules - these should be limited to the ones not already defined
-    ## in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these
-    ## are already part of lefilament/odoo:10.0, 12.0 and 14.0 dockers)
-    # custom_modules_oca:
-    #     - repo: server-tools
-    #       modules:
-    #           - auto_backup
-    #     - repo: knowledge
-    #       modules:
-    #           - document_page_approval
-    #     - repo: social
-    #       modules:
-    #           - mail_attach_existing_attachment
-    #     - repo: website-cms
-    #       modules:
-    #           - cms_delete_content
-    #           - cms_form
-    #           - cms_info
-    #           - cms_status_message
-    ## OPTIONAL - only needed if no nonprod_instances are defined
-    ## Other Odoo modules where git repo is the module
-    # other_repos:
-    #     - repo: filament
-    #       url: git@github.com:lefilament/link_sale_project_tasks.git
-    ## OPTIONAL - only needed if no nonprod_instances are defined
-    ## Other Odoo modules where git repo contains various modules
-    # other_modules:
-    #     - repo: filament
-    #       url: https://github.com/lefilament/bank-statement-import.git
-    #       branch: 12.0-mig-account_bank_statement_import_ofx
-    #       modules:
-    #           - account_bank_statement_import_ofx
-    ## OPTIONAL extra_urls to be accessible from this Odoo intance only
-    ## (if URLs need to be accessible from both prod and non-prod instances, use whitelisted_urls instead)
-    # extra_urls:
-    #     - url: "{{ SERVER_sso_url }}"
-    #       port: 443
-    ## OPTIONAL parameters for deploying another app (for instance a JS app)
-    # extra_app:
-    #     - name: odootest_app
-    #     - image: nginx 
-    #     - url: app-test.example.org
 
-odoo_nonprod_instances:
-    - name: odoo_test
-      ## Directory where this test instance will be installed on server
-      dir: "odootest"
-      ## TEST URL (only sub.domain without https:// in front)
-      url: "{{ SERVER_odoo_test_url }}"
-      ## OPTIONAL - for when prod instance not deployed on server
-      ## Hostname of server where prod server is installed (required for retrieving prod database on test ones)
-      # prod_inv_name: SERVER
-      ## OPTIONAL - only needed when odoo_prod is not defined
-      # master_pass: "{{ SERVER__odoo_test_master_pass }}"
-      # db_user: "{{ SERVER__odoo_test_db_user }}"
-      # db_pass: "{{ SERVER__odoo_test_db_pass }}"
-      ## TEST Database Name
-      db: "{{ SERVER_odoo_db_name_test }}"
-      image_version: "{{ odoo_version }}"
-      ## OPTIONAL - use this variable to force using multiprocessing iso multithreading
-      # force_odoo_workers: True
-      ## Custom modules Le Filament (one module per repo)
-      custom_modules:
-          - automatic_bank_statement_import
-          - lefilament_account
-          - lefilament_export_journal
-          - lefilament_generic_reports
-      ## Custom modules Le Filament (one module per repo and branch is specified instead of taking odoo_version by default)
-      custom_modules_branch:
-          - repo: lefilament_account
-            branch: "{{ odoo_version }}"
-      ## OCA modules - these should be limited to the ones not already defined
-      ## in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these
-      ## are already part of lefilament/odoo:10.0 and 12.0 dockers)
-      custom_modules_oca:
-          - repo: server-tools
-            modules:
-                - auto_backup
-          - repo: knowledge
-            modules:
-                - document_page_approval
-          - repo: social
-            modules:
-                - mail_attach_existing_attachment
-          - repo: website-cms
-            modules:
-                - cms_delete_content
-                - cms_form
-                - cms_info
-                - cms_status_message
-      ## Other Odoo modules where git repo is the module
-      other_repos:
-          - repo: filament
-            url: git@github.com:lefilament/link_sale_project_tasks.git
-      ## Other Odoo modules where git repo contains various modules
-      other_modules:
-          - repo: filament
-            url: https://github.com/lefilament/bank-statement-import.git
-            branch: 12.0-mig-account_bank_statement_import_ofx
-            modules:
-                - account_bank_statement_import_ofx
-      extra_urls:
-          - "{{ SERVER_sso_url }}"
-      ## OPTIONAL parameters for deploying another app (for instance a JS app)
-      # extra_app:
-      #     - name: odootest_app
-      #     - image: nginx
-      #     - url: app-test.example.org
+# Odoo instances definition.
+odoo_instances:
+    # Production instance
+    odoo:
+        prod_instance: odoo
+        image_instance: odootest
+        backup_instance: odoo
+        ## URL (only sub.domain without https:// in front)
+        url: "{{ SERVER_odoo_url }}"
+        master_pass: "{{ SERVER_odoo_master_pass }}"
+        ## Database identifiers user and password
+        db_user: "{{ SERVER_odoo_db_user }}"
+        db_pass: "{{ SERVER_odoo_db_pass }}"
+        ## Database name
+        db: "{{ SERVER_odoo_db_name }}"
+        ## OPTIONAL - For maintenance only - Backup password
+        # odoo_backup_pass: "{{ SERVER_odoo_backup_pass }}"
+        ## OPTIONAL extra_urls to be accessible from this Odoo intance only
+        # Useful for servers in docker_restrict_internet_access to push release to Le Filament Odoo server
+        extra_urls:
+            - url: "{{ lf_odoo_url }}"
+              port: 443
 
-## OPTIONAL - For maintenance only - Backup password
-# odoo_backup_pass: "{{ SERVER_odoo_backup_pass | default(odoo_prod.master_pass) }}"
-
-## OPTIONAL - Default configuration to use namespaces (uncomment and set to false to not use namespace)
-# docker_userns_remap: true
-
-## OPTIONAL - Odoo multilingual - Will install Odoo with all languages (English and French only if set to no - by default) - uncomment and set to yes if needed
-# odoo_multilingual: false
-
-## OPTIONAL - Force usage of Python 3.6 for Odoo 12.0
-# odoo_python36: false
-
-## OPTIONAL - Extra pip packages to be installed in image
-# odoo_pip_packages: unidecode
+    # Test instance
+    odootest:
+        prod_instance: odoo
+        image_instance: odootest
+        backup_instance: odoo
+        ## URL (only sub.domain without https:// in front)
+        url: "{{ SERVER_odoo_test_url }}"
+        ## Database Name
+        db: "{{ SERVER_odoo_db_name_test }}"
+        ## Custom modules Le Filament (one module per repo and specify branch if differ from default odoo version)
+        # custom_modules:
+        #     - repo: lefilament_account
+        #     - repo: lefilament_export_journal
+        #       branch: "14.0"
+        ## OCA modules - these should be limited to the ones not already defined
+        ## in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these
+        ## are already part of lefilament/odoo:10.0 and 12.0 dockers)
+        # custom_modules_oca:
+        #     - repo: server-tools
+        #       modules:
+        #           - auto_backup
+        ## Other Odoo modules where git repo is the module
+        # other_repos:
+        #     - repo: filament
+        #       url: git@github.com:lefilament/link_sale_project_tasks.git
+        ## Other Odoo modules where git repo contains various modules
+        # other_modules:
+        #     - repo: filament
+        #       url: https://github.com/lefilament/bank-statement-import.git
+        #       branch: 12.0-mig-account_bank_statement_import_ofx
+        #       modules:
+        #           - account_bank_statement_import_ofx
+        ## OPTIONAL - Extra pip packages to be installed in image
+        # odoo_pip_packages: unidecode
+        ## OPTIONAL - Odoo multilingual - Will install Odoo with all languages (English and French only if set to no - by default) - uncomment and set to yes if needed
+        # odoo_multilingual: false
+        ## OPTIONAL - Force usage of Python 3.6 for Odoo 12.0
+        # odoo_python36: false
 
 ### OPTIONAL - Mail server configuration - for Odoo - uncomment to add mail server
 ## Mail domain
@@ -162,61 +77,10 @@ odoo_nonprod_instances:
 ## SMTP password
 # smtppass: "{{ SERVER_mail_odoo_pass }}"
 
-## OPTIONAL - Bank configuration - for Odoo automatic retrieval of statements - uncomment to add bank accounts
-## Should auto retrieval be activated ?
-# banking: true
-## Bank name
-# bank: "{{ SERVER_bank }}"
-## Bank website
-# bank_website: "{{ SERVER_bank_website }}"
-## Bank user
-# bank_login: "{{ SERVER_bank_login }}"
-## Bank password
-# bank_pass: "{{ SERVER_bank_pass }}"
-## Bank user id
-# bank_userid: "{{ SERVER_bank_userid }}"
-## Bank account
-# bank_account: "{{ SERVER_bank_account }}"
-## Bank account 2
-# bank_account2: "{{ SERVER_bank_account2 }}"
-
 ## OPTIONAL - GIT private keys - for retrieving private repos (outside Le Filament ones) - uncomment and provide keys as needed
 # git_private_keys: "{{ SERVER_git_private_keys }}"
 
 ## OPTIONAL - Whitelisted URLs allowed to be reached from Odoo SERVER
 # whitelisted_urls:
-#   - accounts.google.com
-#   - cdnjs.cloudflare.com
-#   - www.google.com
-#   - www.googleapis.com
-#   - www.gravatar.com
-#   - nominatim.openstreetmap.org
-#   - data.opendatasoft.com
-#   - github.com
-#   - bitbucket.org
-#   - sources.le-filament.com
-#   - fonts.googleapis.com
-#   - fonts.gstatic.com
-
-## OPTIONAL - Allow access to Odoo DB from outside world
-# odoo_remote_db_access: true
-## OPTIONAL - Extra commands to be added in Dockerfile building Odoo image
-# odoo_specific_dockerfile_commands: []
-## OPTIONAL - Extra host to be defined in Odoo docker /etc/hosts for local access and prevent DNS resolution
-# odoo_extra_host: "docs.example.org:172.17.0.1"
-
-## OPTIONAL - update performance limits for Odoo (see https://www.odoo.com/documentation/14.0/developer/reference/cmdline.html)
-# odoo_db_maxconn: 64
-# odoo_limit_time_cpu: 300
-# odoo_limit_time_real: 600
-
-## OPTIONAL - update performance limits for Postgres (see https://www.postgresql.org/docs/13/runtime-config-connection.html)
-# postgres_options: "-c max_connections=100"
-
-## OPTIONAL - Extra variables to be added in odoo.conf
-# odoo_extra_conf: "log_level = debug"
-
-## OPTIONAL - Deploy Metabase
-# metabase: true
-# metabase_db_ro_user: "{{ SERVER_odoo_db_ro_user }}"
-# metabase_db_ro_pass: "{{ SERVER_odoo_db_ro_pass }}"
+#     - github.com
+#     - sources.le-filament.com

@@ -6,3 +6,4 @@ default_sshd_port: 1022
 ansible_port: "{{ default_sshd_port }}"
 host_admin_user: root
 ansible_python_interpreter: /usr/bin/python3
+log_collection: false

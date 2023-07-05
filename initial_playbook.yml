@@ -1,39 +1,40 @@
 ---
 
 - hosts: all
+  name: Initialize server for Ansible
   gather_facts: false
   vars:
-  - { ansible_become_pass: "{{ host_admin_password }}"}
-  - { ansible_user: "{{ host_admin_user }}" }
-  - { ansible_password: "{{ host_admin_password }}" }
-  - { ansible_port: 22 }
+      ansible_become_pass: "{{ host_admin_password }}"
+      ansible_user: "{{ host_admin_user }}"
+      ansible_password: "{{ host_admin_password }}"
+      ansible_port: 22
   pre_tasks:
-  - name: Initial packages update using raw module
-    raw: apt-get update -y
-    tags: raw-debian
+      - name: Initial packages update using raw module
+        ansible.builtin.raw: apt-get update -y
+        tags: raw-debian
 
-  - name: Initial packages upgrade using raw module
-    raw: apt-get upgrade -y --no-install-recommends
-    tags: raw-debian
+      - name: Initial packages upgrade using raw module
+        ansible.builtin.raw: apt-get upgrade -y --no-install-recommends
+        tags: raw-debian
 
-  - name: Initial python installation using raw module
-    raw: apt-get install -y python3 python3-apt python3-simplejson aptitude --no-install-recommends
-    tags: raw-debian
+      - name: Initial python installation using raw module
+        ansible.builtin.raw: apt-get install -y python3 python3-apt python3-simplejson aptitude --no-install-recommends
+        tags: raw-debian
 
-  - name: Initial packages update using raw module
-    raw: yum update -y
-    tags: raw-redhat
+      - name: Initial packages update using raw module
+        ansible.builtin.raw: yum update -y
+        tags: raw-redhat
 
-  - name: Initial packages upgrade using raw module
-    raw: yum upgrade -y
-    tags: raw-redhat
+      - name: Initial packages upgrade using raw module
+        ansible.builtin.raw: yum upgrade -y
+        tags: raw-redhat
 
-  - name: Initial python installation using raw module
-    raw: yum install -y libselinux-python3 python3 python3-simplejson aptitude
-    tags: raw-redhat
+      - name: Initial python installation using raw module
+        ansible.builtin.raw: yum install -y libselinux-python3 python3 python3-simplejson aptitude
+        tags: raw-redhat
 
-  - name: Gathering facts
-    setup:
+      - name: Gathering facts
+        ansible.builtin.setup:
 
   roles:
-  - { role: init_server, tags: init }
+      - { role: init_server, tags: init }

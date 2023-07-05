@@ -1,0 +1,110 @@
+---
+
+- hosts: docker
+  name: Docker Restart Playbook
+  tasks:
+      # Proxy
+      - name: Restart proxy dockers
+        community.docker.docker_compose:
+            project_src: /home/docker/inverseproxy
+            restarted: true
+        when: inventory_hostname in groups.docker
+        tags: restart_proxy
+
+      # Auth
+      - name: Restart auth dockers
+        community.docker.docker_compose:
+            project_src: /home/docker/auth
+            restarted: true
+        when: inventory_hostname in groups.docker_auth
+        tags: restart_auth
+
+      # Nagios images
+      # Nagios
+      - name: Restart nagios docker image
+        community.docker.docker_compose:
+            project_src: /home/docker/nagios/
+            restarted: true
+        when: inventory_hostname in groups.docker_nagios
+        tags: restart_nagios
+
+      # Nextcloud
+      - name: Restart nextcloud docker
+        community.docker.docker_compose:
+            project_src: /home/docker/nextcloud
+            restarted: true
+        when: inventory_hostname in groups.docker_nextcloud and not ansible_check_mode
+        tags: restart_nextcloud
+
+      ## Odoo
+      # Whitelists
+      - name: Restart odoo docker whitelists
+        community.docker.docker_compose:
+            project_src: /home/docker
+            files: whitelists.yaml
+            project_name: whitelists
+            restarted: true
+        when: inventory_hostname in groups.docker_odoo and restrict_internet_access and whitelisted_urls is defined
+        tags: restart_odoo_test, restart_whitelists
+      # Odoo test
+      - name: Restart odoo instances
+        community.docker.docker_compose:
+            project_src: "/home/docker/{{ item.key }}"
+            restarted: true
+        with_dict: "{{ odoo_instances }}"
+        loop_control:
+            label: "{{ item.key }}"
+        when: inventory_hostname in groups.docker_odoo
+
+      # Owncloud
+      - name: Restart owncloud docker
+        community.docker.docker_compose:
+            project_src: /home/docker/
+            files: owncloud.yaml
+            project_name: owncloud
+            restarted: true
+        when: inventory_hostname in groups.docker_owncloud and not ansible_check_mode
+        tags: restart_owncloud
+
+      # Draw.io
+      - name: Restart drawio docker
+        community.docker.docker_compose:
+            project_src: /home/docker/
+            files: draw.io.yaml
+            project_name: draw.io
+            restarted: true
+        when: inventory_hostname in groups.docker_drawio and not ansible_check_mode
+
+      # Etherpad
+      - name: Restart etherpad docker
+        community.docker.docker_compose:
+            project_src: /home/docker/etherpad
+            restarted: true
+        when: inventory_hostname in groups.docker_etherpad and not ansible_check_mode
+
+      # Framadate
+      - name: Restart drawio docker
+        community.docker.docker_compose:
+            project_src: /home/docker/
+            files: framadate.yaml
+            project_name: framadate
+            restarted: true
+        when: inventory_hostname in groups.docker_framadate and not ansible_check_mode
+
+      # Jitsi
+      - name: Restart jitsi docker
+        community.docker.docker_compose:
+            project_src: /home/docker/
+            files: jitsi.yaml
+            project_name: jitsi
+            restarted: true
+        when: inventory_hostname in groups.docker_jitsi and not ansible_check_mode
+
+      # Privatebin
+      - name: Restart privatebin docker
+        community.docker.docker_compose:
+            project_src: /home/docker/
+            files: privatebin.yaml
+            project_name: privatebin
+            restarted: true
+        when: inventory_hostname in groups.docker_privatebin and not ansible_check_mode

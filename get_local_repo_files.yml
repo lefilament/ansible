@@ -1,0 +1,44 @@
+---
+
+- hosts: docker_odoo
+  name: Get local repo files Playbook
+  gather_facts: false
+  become: false
+  connection: local
+  vars:
+      instance: "odootest"
+      item: "{{ {'key': instance, 'value': odoo_instances[instance]} }}"
+      instance_odoo_setup: "{{ odoo_setup_conf[item.value.odoo_setup_version | default(odoo_setup_version)] }}"
+  tasks:
+      - name: Create templates directory
+        ansible.builtin.file:
+            name: templates
+            state: directory
+            mode: '0755'
+        delegate_to: localhost
+
+      - name: Get odoo template files
+        ansible.builtin.get_url:
+            url: "https://sources.le-filament.com/lefilament/ansible-roles/docker_odoo/-/raw/master/templates/{{ file }}"
+            dest: "templates/{{ file }}"
+            mode: '0644'
+        with_items:
+            - repos.yaml.j2
+            - repos-addons.yaml.j2
+        loop_control:
+            loop_var: file
+        delegate_to: localhost
+
+      - name: Set repos.yaml variables from template
+        ansible.builtin.template:
+            src: "templates/repos.yaml.j2"
+            dest: "templates/{{ inventory_hostname }}.repos.yaml"
+            mode: '0644'
+        delegate_to: localhost
+
+      - name: Set repos-addons.yaml variables from template
+        ansible.builtin.template:
+            src: "templates/repos-addons.yaml.j2"
+            dest: "templates/{{ inventory_hostname }}.repos-addons.yaml"
+            mode: '0644'
+        delegate_to: localhost

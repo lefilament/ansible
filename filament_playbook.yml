@@ -1,66 +1,86 @@
 ---
-
 - hosts: all
+  name: Initialize server configuration
   roles:
-  - { role: init_server, tags: init }
+      - { role: init_server, tags: init }
 
 - hosts: backup_server
+  name: Configure Backup Server
   roles:
-  - { role: backup_server_conf, tags: backup }
+      - { role: backup_server_conf, tags: backup }
 
 - hosts: docker
+  name: Install and Configure Docker
   roles:
-  - { role: docker_server, tags: docker }
+      - { role: docker_server, tags: docker }
 
 - hosts: docker_auth
+  name: Install and Configure authentication Dockers (LemonLDAP SSO)
   roles:
-  - { role: docker_auth, tags: docker_auth }
+      - { role: docker_auth, tags: docker_auth }
 
 - hosts: docker_drawio
+  name: Install and Configure draw.io Docker
   roles:
-  - { role: docker_drawio, tags: docker_drawio }
+      - { role: docker_drawio, tags: docker_drawio }
 
 - hosts: docker_etherpad
+  name: Install and Configure Etherpad Docker
   roles:
-  - { role: docker_etherpad, tags: docker_etherpad }
+      - { role: docker_etherpad, tags: docker_etherpad }
 
 - hosts: docker_framadate
+  name: Install and Configure Framadate Docker
   roles:
-  - { role: docker_framadate, tags: docker_framadate }
+      - { role: docker_framadate, tags: docker_framadate }
 
 - hosts: docker_jitsi
+  name: Install and Configure Jitsi Docker
   roles:
-  - { role: docker_jitsi, tags: docker_jitsi }
+      - { role: docker_jitsi, tags: docker_jitsi }
 
 - hosts: docker_nextcloud
+  name: Install and Configure NextCloud Docker
   roles:
-  - { role: docker_nextcloud, tags: docker_nextcloud }
+      - { role: docker_nextcloud, tags: docker_nextcloud }
 
 - hosts: docker_odoo
+  name: Install and Configure Odoo Docker
   roles:
-  - { role: docker_odoo, tags: docker_odoo }
+      - { role: docker_odoo, tags: docker_odoo }
 
 - hosts: docker_owncloud
+  name: Install and Configure Owncloud Docker
   roles:
-  - { role: docker_owncloud, tags: docker_owncloud }
+      - { role: docker_owncloud, tags: docker_owncloud }
 
 - hosts: docker_privatebin
+  name: Install and Configure Privatebin Docker
   roles:
-  - { role: docker_privatebin, tags: docker_privatebin }
+      - { role: docker_privatebin, tags: docker_privatebin }
 
 - hosts: gitlab
+  name: Install and Configure Gitlab
   roles:
-  - { role: gitlab, tags: gitlab }
+      - { role: gitlab, tags: gitlab }
+
+- hosts: gitlab_runners
+  name: Install and Configure Gitlab runners
+  roles:
+      - { role: gitlab_runner, tags: gitlab_runner }
 
 - hosts: full_maintenance
+  name: Install and Configure Filebeat
   roles:
-  - { role: filebeat, tags: filebeat }
+      - { role: filebeat, tags: filebeat }
 
 - hosts: all
+  name: Install and Configure NRPE and Securize server
   roles:
-  - { role: nagios_nrpe, tags: nrpe }
-  - { role: server_security, tags: security }
+      - { role: nagios_nrpe, tags: nrpe }
+      - { role: server_security, tags: security }
 
 - hosts: docker_nagios
+  name: Install and Configure Nagios Docker
   roles:
-  - { role: docker_nagios, tags: docker_nagios }
+      - { role: docker_nagios, tags: docker_nagios }

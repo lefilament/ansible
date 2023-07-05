@@ -1,0 +1,49 @@
+---
+
+- hosts: docker_odoo:&maintenance_contract
+  name: Cleanup Playbook
+  gather_facts: false
+  vars:
+      cronjobs_to_remove: []
+      files_to_remove:
+          - /home/docker/backups/backup-odoo.yaml
+          - /home/docker/backups/backup2-odoo.yaml
+          - /home/docker/backups/post_restore-odoo_test.sql
+          - /home/docker/backups/pre_restore-odoo_test.sql
+          - /home/docker/backups/restore-odoo_test.yaml
+          - /home/docker/backups/restore2-odoo_test.yaml
+          - /home/docker/backups/post_restore-odoo_dev.sql
+          - /home/docker/backups/pre_restore-odoo_dev.sql
+          - /home/docker/backups/restore-odoo_dev.yaml
+          - /home/docker/backups/restore2-odoo_dev.yaml
+          - /home/docker/backups/post_restore-odoo_preprod.sql
+          - /home/docker/backups/pre_restore-odoo_preprod.sql
+          - /home/docker/backups/restore-odoo_preprod.yaml
+          - /home/docker/backups/restore2-odoo_preprod.yaml
+      packages_to_remove: []
+      docker_volumes_to_remove:
+          - backups_odoo_backup_cache
+          - backups_odoo_backup2_cache
+  tasks:
+      - name: Remove backup cron jobs
+        ansible.builtin.cron:
+            name: "{{ item }}"
+            state: absent
+        with_items: "{{ cronjobs_to_remove }}"
+
+      - name: Remove uncessary files
+        ansible.builtin.file:
+            path: "{{ item }}"
+            state: absent
+        with_items: "{{ files_to_remove }}"
+
+      - name: Remove unecessary volumes
+        community.docker.docker_volume:
+            name: "{{ item }}"
+            state: absent
+        with_items: "{{ docker_volumes_to_remove }}"
+
+      - name: Remove unecessary package
+        ansible.builtin.package:
+            name: "{{ packages_to_remove }}"
+            state: absent
