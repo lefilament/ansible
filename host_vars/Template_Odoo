@@ -11,7 +11,7 @@ odoo_instances:
         image_instance: odootest
         backup_instance: odoo
         ## URL (only sub.domain without https:// in front)
-        url: "{{ SERVER_odoo_url }}"
+        domains: "{{ SERVER_odoo_domains }}"
         master_pass: "{{ SERVER_odoo_master_pass }}"
         ## Database identifiers user and password
         db_user: "{{ SERVER_odoo_db_user }}"
@@ -23,7 +23,7 @@ odoo_instances:
         ## OPTIONAL extra_urls to be accessible from this Odoo intance only
         # Useful for servers in docker_restrict_internet_access to push release to Le Filament Odoo server
         extra_urls:
-            - url: "{{ lf_odoo_url }}"
+            - url: "{{ lf_odoo_domains | first }}"
               port: 443
 
     # Test instance
@@ -32,7 +32,7 @@ odoo_instances:
         image_instance: odootest
         backup_instance: odoo
         ## URL (only sub.domain without https:// in front)
-        url: "{{ SERVER_odoo_test_url }}"
+        domains: "{{ SERVER_odoo_test_domains }}"
         ## Database Name
         db: "{{ SERVER_odoo_db_name_test }}"
         ## Custom modules Le Filament (one module per repo and specify branch if differ from default odoo version)
@@ -41,8 +41,8 @@ odoo_instances:
         #     - repo: lefilament_export_journal
         #       branch: "14.0"
         ## OCA modules - these should be limited to the ones not already defined
-        ## in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these
-        ## are already part of lefilament/odoo:10.0 and 12.0 dockers)
+        ## in groups_vars/docker_odoo in odoo_setup_conf.<odoo version>.default_oca_modules
+        ## (since these are already part of base lefilament/odoo docker image)
         # custom_modules_oca:
         #     - repo: server-tools
         #       modules:
@@ -59,7 +59,8 @@ odoo_instances:
         #       modules:
         #           - account_bank_statement_import_ofx
         ## OPTIONAL - Extra pip packages to be installed in image
-        # odoo_pip_packages: unidecode
+        # odoo_pip_packages:
+        #   - "unidecode"
         ## OPTIONAL - Odoo multilingual - Will install Odoo with all languages (English and French only if set to no - by default) - uncomment and set to yes if needed
         # odoo_multilingual: false
         ## OPTIONAL - Force usage of Python 3.6 for Odoo 12.0
@@ -82,5 +83,6 @@ odoo_instances:
 
 ## OPTIONAL - Whitelisted URLs allowed to be reached from Odoo SERVER
 # whitelisted_urls:
-#     - github.com
-#     - sources.le-filament.com
+#     - data.opendatasoft.com  # Required for SIRENE lookup (l10n_fr_siret_lookup)
+#     - download.geonames.org  # Required for Geoname imports (base_location_geonames_import)
+#     - ec.europa.eu  # Required to check Tax IDs with VIES (l10n_fr_siret_lookup)

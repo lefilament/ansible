@@ -15,7 +15,7 @@ odoo_instances:
         ## backup_instance : if points to another instance = backups are restored from pointed instance
         backup_instance: odoo
         ## URL (only sub.domain without https:// in front)
-        url: "{{ SERVER_odoo_url }}"
+        domains: "{{ SERVER_odoo_domains }}"
         ## OPTIONAL : extra URLs to reach server
         ## (e.g. "secondary.domain.com" if unique, "secondary.domain.com`, `teritary.domain.com`, `domain.fr" otherwise)
         # url2 : "{{ SERVER_odoo_url2 }}"
@@ -39,8 +39,8 @@ odoo_instances:
         #       branch: "14.0"
         ## OPTIONAL - only needed if need_build
         ## OCA modules - these should be limited to the ones not already defined
-        ## in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these
-        ## are already part of lefilament/odoo:10.0, 12.0 and 14.0 dockers)
+        ## in groups_vars/docker_odoo in odoo_setup_conf.<odoo version>.default_oca_modules
+        ## (since these are already part of base lefilament/odoo docker image)
         # custom_modules_oca:
         #     - repo: server-tools
         #       modules:
@@ -97,15 +97,19 @@ odoo_instances:
         # odoo_limit_time_real: 600
         ## OPTIONAL - Extra variables to be added in odoo.conf - only needed if need_build
         # odoo_extra_conf: "log_level = debug"
-        # modules_auto_install_disabled: "stock_sms"
-        # modules_auto_install_enabled: "mail_tracking"
-        # odoo_server_wide_modules: "queue_job"
+        # modules_auto_install_disabled:
+        #   - "stock_sms"
+        # modules_auto_install_enabled:
+        #   - "mail_tracking"
+        # odoo_server_wide_modules:
+        #   - "queue_job"
         ## OPTIONAL - Odoo multilingual - Will install Odoo with all languages (English and French only if set to no - by default) - uncomment and set to yes if needed
         # odoo_multilingual: false
         ## OPTIONAL - Force usage of Python 3.6 for Odoo 12.0
         # odoo_python36: false
         ## OPTIONAL - Extra pip packages to be installed in image - only needed if need_build
-        # odoo_pip_packages: unidecode
+        # odoo_pip_packages:
+        #   - "unidecode"
         ## OPTIONAL - update performance limits for Postgres (see https://www.postgresql.org/docs/13/runtime-config-connection.html)
         # postgres_options: "-c max_connections=100"
 
@@ -124,7 +128,7 @@ odoo_instances:
         ## Ansible Hostname of server where prod server is installed (required for retrieving backup database on test ones)
         # backup_host: SERVER
         ## URL (only sub.domain without https:// in front)
-        url: "{{ SERVER_odoo_test_url }}"
+        domains: "{{ SERVER_odoo_test_domains }}"
         ## OPTIONAL : extra URLs to reach server
         ## (e.g. "secondary.domain.com" if unique, "secondary.domain.com`, `teritary.domain.com`, `domain.fr" otherwise)
         # url2 : "{{ SERVER_odoo_url2 }}"
@@ -143,9 +147,9 @@ odoo_instances:
         #    - repo: lefilament_account
         #    - repo: lefilament_export_journal
         #      branch: "14.0"
-        ## OPTIONAL - OCA modules - these should be limited to the ones not already defined
-        ## in groups_vars/docker_odoo in default_odoo_custom_modules_oca (since these
-        ## are already part of lefilament/odoo:10.0 and 12.0 dockers)
+        ## OCA modules - these should be limited to the ones not already defined
+        ## in groups_vars/docker_odoo in odoo_setup_conf.<odoo version>.default_oca_modules
+        ## (since these are already part of base lefilament/odoo docker image)
         # custom_modules_oca:
         #    - repo: server-tools
         #      modules:
@@ -200,15 +204,19 @@ odoo_instances:
         # odoo_limit_time_real: 600
         ## OPTIONAL - Extra variables to be added in odoo.conf
         # odoo_extra_conf: "log_level = debug"
-        # modules_auto_install_disabled: "stock_sms"
-        # modules_auto_install_enabled: "mail_tracking"
-        # odoo_server_wide_modules: "queue_job"
+        # modules_auto_install_disabled:
+        #   - "stock_sms"
+        # modules_auto_install_enabled:
+        #   - "mail_tracking"
+        # odoo_server_wide_modules:
+        #   - "queue_job"
         ## OPTIONAL - Odoo multilingual - Will install Odoo with all languages (English and French only if set to no - by default) - uncomment and set to yes if needed
         # odoo_multilingual: false
         ## OPTIONAL - Force usage of Python 3.6 for Odoo 12.0
         # odoo_python36: false
         ## OPTIONAL - Extra pip packages to be installed in image
-        # odoo_pip_packages: unidecode
+        # odoo_pip_packages:
+        #   - "unidecode"
         ## OPTIONAL - update performance limits for Postgres (see https://www.postgresql.org/docs/13/runtime-config-connection.html)
         # postgres_options: "-c max_connections=100"
 
@@ -244,3 +252,6 @@ odoo_instances:
 #   - sources.le-filament.com
 #   - fonts.googleapis.com
 #   - fonts.gstatic.com
+#   - data.opendatasoft.com  # Required for SIRENE lookup (l10n_fr_siret_lookup)
+#   - download.geonames.org  # Required for Geoname imports (base_location_geonames_import)
+#   - ec.europa.eu  # Required to check Tax IDs with VIES (l10n_fr_siret_lookup

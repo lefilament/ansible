@@ -1,16 +1,18 @@
 ---
 collections:
     - name: ansible.posix
-      version: '1.2.0'
+      version: '1.5.4'
+    - name: ansible.utils
+      version: '5.1.0'
     - name: community.docker
-      version: '1.8.0'
+      version: '3.12.1'
     - name: community.general
-      version: '3.3.2'
+      version: '9.3.0'
 
 roles:
     - src: https://sources.le-filament.com/lefilament/ansible-roles/backup_server_conf
       scm: git
-      version: v1.0.7
+      version: v1.0.8
     - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_auth
       scm: git
       version: v1.0.6
@@ -28,37 +30,34 @@ roles:
       version: v1.0.2
     - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_nagios
       scm: git
-      version: v1.2.5
+      version: v1.2.7
     - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_nextcloud
       scm: git
-      version: v1.1.10
+      version: v1.1.11
     - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_odoo
       scm: git
-      version: v1.3.4
-    - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_owncloud
-      scm: git
-      version: v1.0.8
+      version: v1.6.1
     - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_privatebin
       scm: git
       version: v1.0.6
     - src: https://sources.le-filament.com/lefilament/ansible-roles/docker_server
       scm: git
-      version: v1.7.1
+      version: v1.10.0
     - src: https://sources.le-filament.com/lefilament/ansible-roles/filebeat
       scm: git
-      version: v1.0.6
+      version: v1.0.7
     - src: https://sources.le-filament.com/lefilament/ansible-roles/gitlab
       scm: git
-      version: v1.0.10
+      version: v1.0.12
     - src: https://sources.le-filament.com/lefilament/ansible-roles/gitlab_runner
       scm: git
       version: v1.1.1
     - src: https://sources.le-filament.com/lefilament/ansible-roles/init_server
       scm: git
-      version: v1.1.9
+      version: v1.1.12
     - src: https://sources.le-filament.com/lefilament/ansible-roles/nagios_nrpe
       scm: git
-      version: v1.1.7
+      version: v1.1.8
     - src: https://sources.le-filament.com/lefilament/ansible-roles/server_security
       scm: git
       version: v1.2.5

@@ -1,0 +1,799 @@
+---
+- hosts: "docker_odoo:&full_maintenance"
+  name: "Odoo updater"
+  gather_facts: true
+  vars_files:
+    # Path to `vars/main.yml` in `docker_odoo` role.
+    - "~/.ansible/roles/docker_odoo/vars/main.yml"
+  vars:
+    # Additional
+    odoo_updater_suffix: '_updater'
+    odoo_instance_updater_name: "{{ odoo_instance.key }}{{ odoo_updater_suffix }}"
+    odoo_instance_updater_database_name: "{{ odoo_instance.value.db }}{{ odoo_updater_suffix }}"
+    label_with_instance_updater_name: "{{ odoo_instance_updater_name }} (updater of '{{ odoo_instance.key }}')"
+    # Default value of extra vars
+    allow_prod_test_diff: false
+    allow_warnings: false
+    allow_errors: false
+    allow_criticals: false
+    print: true
+    print_debug: false
+    selected_odoo_instance_kind: 'prod'
+    stop_before_update: false
+    update_test_instance: false
+    # Default value of internal vars
+    selected_instances: {}
+    work_instances: {}
+    work_instances_real_update: {}
+
+  tasks:
+    - name: "Set dictionnary of selected instances"
+      tags:
+        - "always"
+      set_fact:
+        selected_instances: "{{ selected_instances | default({}) | combine({item.key: item.value}) }}"
+      loop: "{{ odoo_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+    
+    - name: "Check if test and production images are the same: get hashes"
+      tags:
+        - "check_image"
+        - "update"
+      community.docker.docker_image_info:
+        name: "filament/{{ odoo_instance.key }}:{{ odoo_instance_version }}"
+      loop: "{{ odoo_instances | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+      when: >
+        allow_prod_test_diff is falsy(convert_bool=True)
+        and (selected_odoo_version is undefined or odoo_instance_version in selected_odoo_version)
+      register: result_images
+
+    - name: "Check if test and production images are the same: store hashes"
+      tags:
+        - "check_image"
+        - "update"
+      ansible.builtin.set_fact:
+        odoo_image_hashes: "{{ odoo_image_hashes | default({}) | combine({item.item.key: item.images.0.Id}) }}"
+      loop: "{{ result_images.results | flatten(levels=1) }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: >
+        item.item is defined
+        and (item.skipped is undefined or item.skipped is false)
+        and item.images | length > 0
+
+    - name: "Check if test and production images are the same: filter updatable instance"
+      tags:
+        - "always"
+      set_fact:
+        work_instances: "{{ work_instances | default({}) | combine({item.key: item.value}) }}"
+      loop: "{{ selected_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: >
+        allow_prod_test_diff is truthy(convert_bool=True)
+        or (odoo_image_hashes[odoo_instance.key] | length == 71
+          and odoo_image_hashes[odoo_image_instance.key] | length == 71
+          and odoo_image_hashes[odoo_instance.key] == odoo_image_hashes[odoo_image_instance.key])
+
+    - name: "Check if test and production images are the same: list instances that cannot be updated"
+      tags:
+        - "always"
+      ansible.builtin.debug:
+        # Print in red.
+        msg: "\e[31mcannot update: {{ item.key }}\e[0m"
+      loop: "{{ selected_instances | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+      when: >
+        allow_prod_test_diff is falsy(convert_bool=True)
+        and not item.key in work_instances
+
+    - name: "Check if test and production images are the same: list instances ready to test update"
+      tags:
+        - "always"
+      ansible.builtin.debug:
+        msg: "ready to update: {{ item.key }}"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+
+    - name: "Wait for validation: work instances"
+      tags:
+        - "always"
+      ansible.builtin.pause:
+
+    - name: "Create docker directories for Odoo updater instance on server in /home/docker/<instance>_updater/"
+      tags:
+        - "config"
+      ansible.builtin.file:
+          name: "/home/docker/{{ odoo_instance_updater_name }}"
+          state: directory
+          owner: "root"
+          group: "root"
+          mode: "0755"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+
+    - name: "Create docker build directories for Odoo updater instance on server in /home/docker/<instance>_updater/odoo/"
+      tags:
+        - "config"
+      ansible.builtin.file:
+          name: "/home/docker/{{ odoo_instance_updater_name }}/odoo/"
+          state: directory
+          owner: "root"
+          group: "root"
+          mode: "0755"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+
+    - name: Copy private GitLab ssh keys file
+      tags:
+        - "config"
+      ansible.builtin.copy:
+          content: "{{ git_modules_privkey | default('') }}"
+          dest: "/home/docker/{{ odoo_instance_updater_name }}/odoo/id_ed25519.sources"
+          owner: root
+          group: root
+          mode: '0400'
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+
+    - name: Copy ssh config for connecting to LF Gitlab
+      tags:
+        - "config"
+      ansible.builtin.copy:
+          src: "~/.ansible/roles/docker_odoo/files/ssh_config"
+          dest: "/home/docker/{{ odoo_instance_updater_name }}/odoo/ssh_config"
+          owner: root
+          group: root
+          mode: '0444'
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+
+    - name: Copy private Git ssh keys file
+      tags:
+        - "config"
+      ansible.builtin.copy:
+          content: "{{ git_private_keys }}"
+          dest: "/home/docker/{{ odoo_instance_updater_name }}/odoo/id_rsa"
+          owner: root
+          group: root
+          mode: '0400'
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: >
+        git_private_keys is defined
+        and test_instance_is_selected
+
+    - name: "Copy odoo.conf file"
+      tags:
+        - "config"
+      vars:
+        template_admin_passwd: "{{ odoo_source_instance.value.master_pass | pbkdf2_passwd(65534 | random(seed=inventory_hostname) | string) }}"
+        template_server_wide_modules: "{{ odoo_instance_setup.server_wide_modules | join(',') }}{% if odoo_instance.value.odoo_server_wide_modules is defined %},{{ odoo_instance.value.odoo_server_wide_modules | join(',') }}{% endif %}"
+        template_dbfilter: "^({{ odoo_source_instance.value.db }}|{{ odoo_image_instance.value.db }})$"
+        template_db_name: "{{ odoo_source_instance.value.db }}"
+        template_db_password: "{{ odoo_source_instance.value.db_pass }}"
+        template_db_user: "{{ odoo_source_instance.value.db_user }}"
+        template_db_maxconn: "{{ odoo_instance.value.odoo_db_maxconn }}"
+        template_limit_time_cpu: "{{ odoo_instance.value.odoo_limit_time_cpu }}"
+        template_limit_time_real: "{{ odoo_instance.value.odoo_limit_time_real }}"
+        template_force_workers: "{{odoo_instance.value.force_odoo_workers}}"
+        template_modules_auto_install_disabled: "{{ (odoo_instance_setup.modules_auto_install_disabled | default(['mail_bot'])) | join(',') }}{% if odoo_instance.value.modules_auto_install_disabled is defined %},{{ odoo_instance.value.modules_auto_install_disabled | join(',') }}{% endif %}"
+        template_modules_auto_install_enabled: "{{ (odoo_instance_setup.modules_auto_install_enabled | default(['web'])) | join(',') }}{% if odoo_instance.value.modules_auto_install_enabled is defined %},{{ odoo_instance.value.modules_auto_install_enabled | join(',') }}{% endif %}"
+        template_extra_conf: "{{ odoo_instance.value.odoo_extra_conf }}"
+      ansible.builtin.template:
+          src: "~/.ansible/roles/docker_odoo/templates/odoo.conf.j2"
+          dest: "/home/docker/{{ odoo_instance_updater_name }}/odoo/odoo.conf"
+          owner: "root"
+          group: "root"
+          mode: "0600"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+
+    - name: Copy Dockerfile to retrieve private repos and extra OCA ones
+      tags:
+        - "config"
+      vars:
+        template_odoo_instance: "{{ odoo_image_instance }}"
+        template_odoo_instance_setup: "{{ odoo_image_instance_setup }}"
+      ansible.builtin.template:
+          src: "~/.ansible/roles/docker_odoo/templates/Dockerfile.j2"
+          dest: "/home/docker/{{ odoo_instance_updater_name }}/odoo/Dockerfile"
+          owner: root
+          group: root
+          mode: '0644'
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+
+    - name: Copy docker compose service
+      tags:
+        - "config"
+      vars:
+        template_updater_mode: true
+        template_database_name: "{{ odoo_instance_updater_database_name }}"
+        template_db_filter: "{{ odoo_instance_updater_database_name }}"
+        template_odoo_instance: "{{ {'key': odoo_instance_updater_name, 'value': odoo_instance.value} }}"
+        template_odoo_instance_setup: "{{ odoo_instance_setup }}"
+        template_odoo_instance_domains: "{{ odoo_instance_domains }}"
+        template_odoo_source_instance: "{{ odoo_source_instance }}"
+        template_instance_is_prod: false
+        template_instance_need_build: true
+        template_traefik_entrypoints: 'websecure_updater'
+      ansible.builtin.template:
+          src: "~/.ansible/roles/docker_odoo/templates/docker-compose.yaml.j2"
+          dest: "/home/docker/{{ odoo_instance_updater_name }}/docker-compose.yml"
+          owner: root
+          group: root
+          mode: '0400'
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+
+    - name: "Copy sql script to be run before restoring db from backup_instance"
+      tags:
+        - "config"
+        - "restore"
+      vars:
+        template_database_name: "{{ odoo_instance_updater_database_name }}"
+      ansible.builtin.template:
+        src: "~/.ansible/roles/docker_odoo/templates/pre_restore-odootest.sql.j2"
+        dest: "/home/docker/{{ odoo_instance_updater_name }}/pre_restore-{{ odoo_instance_updater_name }}.sql"
+        owner: "root"
+        group: "root"
+        mode: "0444"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+
+    - name: "Copy sql script to be run after restoring db from backup_instance"
+      tags:
+        - "config"
+        - "restore"
+      ansible.builtin.template:
+        src: "~/.ansible/roles/docker_odoo/templates/post_restore-odootest.sql.j2"
+        dest: "/home/docker/{{ odoo_instance_updater_name }}/post_restore-{{ odoo_instance_updater_name }}.sql"
+        owner: "root"
+        group: "root"
+        mode: "0444"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+
+    - name: "Copy compose file to restore db from backup_instance"
+      tags:
+        - "config"
+        - "restore"
+      vars:
+        template_backup_account: "{{ {'key': '1', 'value': swift_accounts[1]} }}"
+        template_database_name: "{{ odoo_instance_updater_database_name }}"
+        template_odoo_instance: "{{ {'key': odoo_instance_updater_name, 'value': odoo_instance.value} }}"
+        template_odoo_source_instance: "{{ odoo_source_instance }}"
+      ansible.builtin.template:
+        src: "~/.ansible/roles/docker_odoo/templates/restore-odootest.yaml.j2"
+        dest: "/home/docker/{{ template_odoo_instance.key }}/restore-{{ template_odoo_instance.key }}{{ template_backup_account.key }}.yaml"
+        owner: "root"
+        group: "root"
+        mode: "0400"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+
+    - name: "Pull Odoo image"
+      tags:
+        - "pull"
+      vars:
+        odoo_favor: "{{ '_ml' if (odoo_image_instance.value.odoo_multilingual | default(false)) else '_py3.6' if (odoo_image_instance.value.odoo_python36 | default(false)) else '' }}"
+      community.docker.docker_image:
+        name: "lefilament/odoo:{{ odoo_image_instance_setup.odoo_version }}{{ odoo_favor }}"
+        source: pull
+        force_source: true
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+      async: 900
+      poll: 10
+    
+    - name: "rebuild instance images: building"
+      tags:
+        - "rebuild"
+      ansible.builtin.command:
+        chdir: "/home/docker/{{ odoo_instance_updater_name }}/"
+        cmd: "docker compose build --no-cache"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+      async: 1800
+      poll: 10
+
+    - name: "rebuild instance images: print stdout"
+      tags:
+        - "rebuild"
+      ansible.builtin.debug:
+        msg: "{{ item.stdout }}"
+      loop: "{{ result.results | flatten(levels=1) }}"
+      when: >
+        print is truthy(convert_bool=True)
+        and item.item is defined
+        and (item.skipped is undefined or item.skipped is false)
+        and item.stdout is defined
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+
+    - name: "rebuild instance images: print stderr"
+      tags:
+        - "rebuild"
+      ansible.builtin.debug:
+        msg: "{{ item.stderr }}"
+      loop: "{{ result.results | flatten(levels=1) }}"
+      when: >
+        print is truthy(convert_bool=True)
+        and item.item is defined
+        and (item.skipped is undefined or item.skipped is false)
+        and item.stderr is defined
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+
+    - name: "start database container"
+      tags:
+        - "restore"
+      ansible.builtin.command:
+        chdir: "/home/docker/{{ odoo_instance_updater_name }}/"
+        cmd: "docker compose up --detach db"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+      async: 60
+      poll: 10
+
+    - name: "restore prod data on Odoo updater instance"
+      tags:
+        - "restore"
+      ansible.builtin.command:
+        chdir: "/home/docker/{{ odoo_instance_updater_name }}/"
+        cmd: "docker compose --file restore-{{ odoo_instance_updater_name }}1.yaml run --rm restore_test"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+      async: 1800
+      poll: 10
+
+    - name: "update Odoo modules: updating"
+      tags:
+        - "update"
+      ansible.builtin.command:
+        chdir: "/home/docker/{{ odoo_instance_updater_name }}/"
+        cmd: "docker compose run --rm --label 'traefik.enable=false' odoo odoo --i18n-overwrite --stop-after-init --database {{ odoo_instance_updater_database_name }} --update all"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+      when: test_instance_is_selected
+      ignore_errors: true
+      register: result
+      async: 1800
+      poll: 10
+
+    - name: "update Odoo modules: print stdout"
+      tags:
+        - "update"
+      ansible.builtin.debug:
+        msg: "{{ item.stdout }}"
+      loop: "{{ result.results | flatten(levels=1) }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: >
+        print_debug is truthy(convert_bool=True)
+        and item.item is defined
+        and (item.skipped is undefined or item.skipped is false)
+        and item.stdout is defined
+
+    - name: "update Odoo modules: print stderr"
+      tags:
+        - "update"
+      ansible.builtin.debug:
+        msg: "{{ item.stderr }}"
+      loop: "{{ result.results | flatten(levels=1) }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: >
+        print_debug is truthy(convert_bool=True)
+        and item.item is defined
+        and (item.skipped is undefined or item.skipped is false)
+        and item.stderr is defined
+
+    - name: "update Odoo modules: store result"
+      tags:
+        - "update"
+      ansible.builtin.set_fact:
+        odoo_instances_updater_logs: "{{ odoo_instance_updater_logs | default({}) | combine({item.item.key: item}) }}"
+        cacheable: yes
+      loop: "{{ result.results | flatten(levels=1) }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: >
+        item.item is defined
+        and (item.skipped is undefined or item.skipped is false)
+
+    - name: "update Odoo modules: check result"
+      tags:
+        - "update"
+      block:
+        - name: "update Odoo modules: parse logs"
+          set_fact:
+            work_instances_updater_logs_warnings: "{{ work_instances_updater_logs_warnings | default({}) | combine({item.key: odoo_instances_updater_logs[item.key].stderr_lines | select('contains', ' WARNING')}) }}"
+            work_instances_updater_logs_errors: "{{ work_instances_updater_logs_errors | default({}) | combine({item.key: odoo_instances_updater_logs[item.key].stderr_lines | select('contains', ' ERROR')}) }}"
+            work_instances_updater_logs_criticals: "{{ work_instances_updater_logs_critials | default({}) | combine({item.key: odoo_instances_updater_logs[item.key].stderr_lines | select('contains', 'CRITICAL')}) }}"
+          loop: "{{ work_instances | dict2items }}"
+          loop_control:
+            label: "{{ label_with_instance_updater_name }}"
+
+        # Already done by 'update Odoo modules: updating' task.
+        # - name: "print whole stderr if critical logs are present"
+        #   ansible.builtin.debug:
+        #     msg: "{{ item.value.stderr }}"
+        #   loop: "{{ odoo_instances_updater_logs | dict2items }}"
+        #   loop_control:
+        #     label: "{{ label_with_instance_updater_name }}"
+        #   when: >
+        #     print is truthy(convert_bool=True)
+        #     and work_instances_updater_logs_criticals[item.key] | length > 0
+
+        - name: "print errors logs"
+          ansible.builtin.debug:
+            # Print in red.
+            msg: "\e[31m{{ work_instances_updater_logs_errors[item.key] | join('\e[0m\n\e[31m') }}\e[0m"
+          loop: "{{ work_instances | dict2items }}"
+          loop_control:
+            label: "{{ label_with_instance_updater_name }}"
+          when: >
+            print is truthy(convert_bool=True)
+            and item.value | length > 0
+
+        - name: "print warnings logs"
+          ansible.builtin.debug:
+            # Print in red.
+            msg: "\e[31m{{ work_instances_updater_logs_warnings[item.key] | join('\e[0m\n\e[31m') }}\e[0m"
+          loop: "{{ work_instances | dict2items }}"
+          loop_control:
+            label: "{{ label_with_instance_updater_name }}"
+          when: >
+            print is truthy(convert_bool=True)
+            and item.value | length > 0
+
+    - name: "Odoo updater instance: stop"
+      tags:
+        - "restore"
+        - "update"
+        - "stop_updater_instance"
+      community.docker.docker_compose_v2:
+        project_src: "/home/docker/{{ odoo_instance_updater_name }}/"
+        remove_orphans: true
+        state: absent
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+
+    - name: "Odoo updater instance: start"
+      tags:
+        - "never"
+        - "start_updater_instance"
+      community.docker.docker_compose_v2:
+        project_src: "/home/docker/{{ odoo_instance_updater_name }}/"
+        recreate: always
+        remove_orphans: true
+        state: present
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ label_with_instance_updater_name }}"
+
+    - name: "reset work instance list for real update"
+      tags:
+        - "update"
+      set_fact:
+        work_instances_real_update: {}
+
+    - name: "add instance to real update list if test update succeed"
+      tags:
+        - "update"
+      set_fact:
+        work_instances_real_update: "{{ work_instances_real_update | default({}) | combine({item.item.key: item.item.value}) }}"
+      loop: "{{ result.results | flatten(levels=1) }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: >
+        item.item is defined
+        and (item.skipped is undefined or item.skipped is false)
+        and item.rc == 0
+        and (allow_warnings or work_instances_updater_logs_warnings[item.item.key] | length == 0)
+        and (allow_errors or work_instances_updater_logs_errors[item.item.key] | length == 0)
+        and (allow_criticals or work_instances_updater_logs_criticals[item.item.key] | length == 0)
+
+    - name: "list real instances that cannot be updated"
+      tags:
+        - "update"
+      ansible.builtin.debug:
+        # Print in red.
+        msg: "\e[31mcannot update: {{ item.key }}\e[0m"
+      loop: "{{ work_instances | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+      when: not item.key in work_instances_real_update
+
+    - name: "list real instances ready to be updated"
+      tags:
+        - "update"
+      ansible.builtin.debug:
+        msg: "ready to update: {{ item.key }}"
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+        
+    - name: "list real TEST instances ready to be updated"
+      tags:
+        - "update"
+      ansible.builtin.debug:
+        msg: "ready to update TEST: {{ odoo_image_instance.key }}"
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+      when: odoo_instance.key != odoo_image_instance.key
+
+    - name: "Wait for validation: real instances to be updated"
+      tags:
+        - "always"
+      ansible.builtin.pause:
+
+    - name: "update real Odoo instance: copy updated image"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "update_real_instance_image"
+      community.docker.docker_image_tag:
+        name: "filament/{{ odoo_instance_updater_name }}:{{ odoo_instance_version }}"
+        repository: "filament/{{ odoo_instance.key }}:{{ odoo_instance_version }}"
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+      when: test_instance_is_selected
+
+    - name: "update real Odoo TEST instance: copy updated image"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "update_real_instance_test"
+        - "update_real_instance_test_image"
+      community.docker.docker_image_tag:
+        name: "filament/{{ odoo_instance_updater_name }}:{{ odoo_instance_version }}"
+        repository: "filament/{{ odoo_image_instance.key }}:{{ odoo_instance_version }}"
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_image_instance.key }} (test instance of '{{ odoo_instance.key }}')"
+      when: >
+        test_instance_is_selected
+        and (odoo_instance.key != odoo_image_instance.key)
+
+    - name: "update real Odoo instance: stop"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "stop_real_instance"
+      community.docker.docker_compose_v2:
+        project_src: "/home/docker/{{ odoo_instance.key }}/"
+        remove_orphans: true
+        state: absent
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+      when: >
+        test_instance_is_selected
+        and stop_before_update is truthy(convert_bool=True)
+
+    - name: "update real Odoo instance: updating modules"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "update_real_instance_modules"
+      ansible.builtin.command:
+        chdir: "/home/docker/{{ odoo_instance.key }}/"
+        cmd: "docker compose run --rm --label 'traefik.enable=false' odoo odoo --i18n-overwrite --stop-after-init --database {{ odoo_instance.value.db }} --update all"
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+      when: test_instance_is_selected
+      register: result_real_update
+      async: 1800
+      poll: 10
+
+    - name: "update real Odoo instance modules: print stdout"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "update_real_instance_modules"
+      ansible.builtin.debug:
+        msg: "{{ item.stdout }}"
+      loop: "{{ result_real_update.results | flatten(levels=1) }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: >
+        print_debug is truthy(convert_bool=True)
+        and item.item is defined
+        and (item.skipped is undefined or item.skipped is false)
+        and item.stdout is defined
+
+    - name: "update real Odoo instance modules: print stderr"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "update_real_instance_modules"
+      ansible.builtin.debug:
+        msg: "{{ item.stderr }}"
+      loop: "{{ result_real_update.results | flatten(levels=1) }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: >
+        print_debug is truthy(convert_bool=True)
+        and item.item is defined
+        and (item.skipped is undefined or item.skipped is false)
+        and item.stderr is defined
+
+    - name: "update real Odoo instance modules: store result"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "update_real_instance_modules"
+      ansible.builtin.set_fact:
+        odoo_instances_logs: "{{ odoo_instance_logs | default({}) | combine({item.item.key: item}) }}"
+        cacheable: yes
+      loop: "{{ result_real_update.results | flatten(levels=1) }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: >
+        item.item is defined
+        and (item.skipped is undefined or item.skipped is false)
+
+    - name: "update real Odoo instance modules: check result"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "update_real_instance_modules"
+      block:
+        - name: "update real Odoo instance modules: parse logs"
+          set_fact:
+            work_instances_logs_warnings: "{{ work_instances_logs_warnings | default({}) | combine({item.key: item.value.stderr_lines | select('contains', ' WARNING')}) }}"
+            work_instances_logs_errors: "{{ work_instances_logs_errors | default({}) | combine({item.key: item.value.stderr_lines | select('contains', ' ERROR')}) }}"
+            work_instances_logs_criticals: "{{ work_instances_logs_critials | default({}) | combine({item.key: item.value.stderr_lines | select('contains', 'CRITICAL')}) }}"
+          loop: "{{ odoo_instances_logs | dict2items }}"
+          loop_control:
+            label: "{{ item.key }}"
+          when: item.key in work_instances_real_update
+
+        - name: "update real Odoo instance modules: print errors logs"
+          ansible.builtin.debug:
+            # Print in red.
+            msg: "\e[31m{{ item.value | join('\e[0m\n\e[31m') }}\e[0m"
+          loop: "{{ work_instances_logs_errors | dict2items }}"
+          loop_control:
+            label: "{{ item.key }}"
+          when: >
+            print is truthy(convert_bool=True)
+            and item.value | length > 0
+            and item.key in work_instances_real_update
+
+        - name: "update real Odoo instance modules: print warnings logs"
+          ansible.builtin.debug:
+            # Print in red.
+            msg: "\e[31m{{ item.value | join('\e[0m\n\e[31m') }}\e[0m"
+          loop: "{{ work_instances_logs_warnings | dict2items }}"
+          loop_control:
+            label: "{{ label_with_instance_updater_name }}"
+          when: >
+            print is truthy(convert_bool=True)
+            and item.value | length > 0
+            and item.key in work_instances_real_update
+
+    - name: "restart real Odoo instance: stop"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "restart_real_instance"
+      community.docker.docker_compose_v2:
+        project_src: "/home/docker/{{ odoo_instance.key }}/"
+        remove_orphans: true
+        state: absent
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+      when: test_instance_is_selected
+
+    - name: "restart real Odoo instance: start"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "restart_real_instance"
+      community.docker.docker_compose_v2:
+        project_src: "/home/docker/{{ odoo_instance.key }}/"
+        recreate: always
+        remove_orphans: true
+        state: present
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_instance.key }}"
+      when: test_instance_is_selected
+      
+    - name: "update real Odoo TEST instance: updating modules"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "update_real_instance_test"
+        - "update_real_instance_test_modules"
+      ansible.builtin.command:
+        chdir: "/home/docker/{{ odoo_image_instance.key }}/"
+        cmd: "docker compose run --rm --label 'traefik.enable=false' odoo odoo --i18n-overwrite --stop-after-init --database {{ odoo_image_instance.value.db }} --update all"
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_image_instance.key }} (test instance of '{{ odoo_instance.key }}')"
+      when: >
+        test_instance_is_selected
+        and (odoo_instance.key != odoo_image_instance.key)
+      register: result_real_update
+      async: 1800
+      poll: 10
+      
+    - name: "restart real Odoo TEST instance: stop"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "update_real_instance_test"
+        - "restart_real_instance_test"
+      community.docker.docker_compose_v2:
+        project_src: "/home/docker/{{ odoo_image_instance.key }}/"
+        remove_orphans: true
+        state: absent
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_image_instance.key }} (test instance of '{{ odoo_instance.key }}')"
+      when: >
+        test_instance_is_selected
+        and (odoo_instance.key != odoo_image_instance.key)
+
+    - name: "restart real Odoo TEST instance: start"
+      tags:
+        - "never"
+        - "update_real_instance"
+        - "update_real_instance_test"
+        - "restart_real_instance_test"
+      community.docker.docker_compose_v2:
+        project_src: "/home/docker/{{ odoo_image_instance.key }}/"
+        recreate: always
+        remove_orphans: true
+        state: present
+      loop: "{{ work_instances_real_update | dict2items }}"
+      loop_control:
+        label: "{{ odoo_image_instance.key }} (test instance of '{{ odoo_instance.key }}')"
+      when: >
+        test_instance_is_selected
+        and (odoo_instance.key != odoo_image_instance.key)

@@ -1,0 +1,552 @@
+---
+- hosts: "all"
+  name: "additional facts"
+  gather_facts: false
+  vars:
+    print: false
+  tags:
+    - "linux"
+  tasks:
+    - name: "linux kernel version"
+      tags:
+        - "linux_version"
+      block:
+        - name: "linux kernel version: get"
+          ansible.builtin.shell:
+            cmd: "uname -r | grep -Po '\\d+\\.\\d+.\\d+'"
+          register: linux_version
+
+        - name: "linux kernel version: print"
+          when: print is truthy(convert_bool=True)
+          ansible.builtin.debug:
+            msg: "{{ linux_version.stdout }}"
+
+        - name: "linux kernel version: store"
+          ansible.builtin.set_fact:
+            linux_version: "{{ linux_version.stdout }}"
+            cacheable: yes
+
+- hosts: "gitlab"
+  name: "additional facts"
+  gather_facts: false
+  vars:
+    print: false
+  tags:
+    - "gitlab"
+  tasks:
+    - name: "gitlab version"
+      when: "'gitlab' in group_names"
+      tags:
+        - "gitlab_version"
+      block:
+        - name: "gitlab version: get"
+          ansible.builtin.shell:
+            cmd: "dpkg -s gitlab-ce | grep Version | grep -Po '\\d+\\.\\d+.\\d+'"
+          register: gitlab_version
+
+        - name: "gitlab version: print"
+          when: print is truthy(convert_bool=True)
+          ansible.builtin.debug:
+            msg: "{{ gitlab_version.stdout }}"
+
+        - name: "gitlab version: store"
+          ansible.builtin.set_fact:
+            gitlab_version: "{{ gitlab_version.stdout }}"
+            cacheable: yes
+
+- hosts: "docker"
+  name: "additional facts"
+  gather_facts: false
+  vars:
+    print: false
+  tags:
+    - "docker"
+  tasks:
+    - name: "docker version"
+      when: "'docker' in group_names"
+      tags:
+        - "docker_version"
+      block:
+        - name: "docker version: get"
+          ansible.builtin.shell:
+            cmd: "docker version --format '{{ '{{' }}.Server.Version{{ '}}' }}'"
+          register: docker_version
+
+        - name: "docker version: print"
+          when: print is truthy(convert_bool=True)
+          ansible.builtin.debug:
+            msg: "{{ docker_version.stdout }}"
+
+        - name: "docker version: store"
+          ansible.builtin.set_fact:
+            docker_version: "{{ docker_version.stdout }}"
+            cacheable: yes
+
+    - name: "traefik version"
+      when: "'docker' in group_names"
+      tags:
+        - "traefik_version"
+      block:
+        - name: "traefik version: get"
+          ansible.builtin.shell:
+            cmd: "docker exec inverseproxy traefik version | grep Version | grep -Po '\\d+\\.\\d+\\.\\d+'"
+          register: traefik_version
+
+        - name: "traefik version: print"
+          when: print is truthy(convert_bool=True)
+          ansible.builtin.debug:
+            msg: "{{ traefik_version.stdout }}"
+
+        - name: "traefik version: store"
+          ansible.builtin.set_fact:
+            traefik_version: "{{ traefik_version.stdout }}"
+            cacheable: yes
+
+- hosts: "docker_odoo"
+  name: "additional facts"
+  gather_facts: false
+  vars:
+    odoo_instance: "{{ item }}"
+    odoo_instance_setup: "{{ odoo_setup_conf[odoo_instance.value.odoo_setup_version | default(odoo_setup_version)] }}"
+    odoo_instance_source_image: "{{ odoo_instance if odoo_instance.value.image_instance == odoo_instance.key else {'key': odoo_instance.value.image_instance, 'value': odoo_instances[odoo_instance.value.image_instance]} }}"
+    odoo_instance_source_image_setup: "{{ odoo_setup_conf[odoo_instance_source_image.value.odoo_setup_version | default(odoo_setup_version)] }}"
+    print: false
+  tags:
+    - "odoo"
+  tasks:
+    - name: "Ansible info about Odoo instances"
+      tags:
+        - "odoo_info"
+      block:
+        - name: "Ansible info about Odoo instances: store"
+          ansible.builtin.set_fact:
+            odoo_instance_info: "{{ odoo_instance_info | default({}) | combine({odoo_instance.key: odoo_instance.value}) }}"
+            cacheable: yes
+          loop: "{{ odoo_instances | dict2items }}"
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          when: selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance
+
+    - name: "odoo version"
+      tags:
+        - "odoo_version"
+      block:
+        - name: "odoo version: get"
+          ansible.builtin.shell:
+            cmd: "docker exec {{ odoo_instance.key }} /opt/odoo/odoo/odoo-bin --version"
+          loop: "{{ odoo_instances | dict2items }}"
+          when: selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          register: results_version
+
+        - name: "odoo version: print"
+          ansible.builtin.debug:
+            msg: "{{ item.stdout }}"
+          loop: "{{ results_version.results | flatten(levels=1) }}"
+          when: >
+            print is truthy(convert_bool=True)
+            and item.item is defined
+            and (item.skipped is undefined or item.skipped is false)
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo version: store"
+          ansible.builtin.set_fact:
+            odoo_instance_versions: "{{ odoo_instance_versions | default({}) | combine({item.item.key: item.stdout}) }}"
+            cacheable: yes
+          loop: "{{ results_version.results | flatten(levels=1) }}"
+          loop_control:
+            label: "{{ item.item.key }}"
+          when: >
+            item.item is defined
+            and (item.skipped is undefined or item.skipped is false)
+          register: odoo_version
+
+    - name: "odoo base image info"
+      tags:
+        - "odoo_image"
+      block:
+        - name: "odoo base image date: get"
+          community.docker.docker_image_info:
+            name:
+              - "lefilament/odoo:{{ odoo_instance_source_image_setup.odoo_version }}{% if odoo_instance_source_image.value.odoo_multilingual | default(false) %}_ml{% endif %}"
+          loop: "{{ odoo_instances | dict2items }}"
+          when: selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          register: results_image_base_info
+
+        - name: "odoo base image date: print"
+          ansible.builtin.debug:
+            msg: "{{ item.images.0.Created }}"
+          loop: "{{ results_image_base_info.results | flatten(levels=1) }}"
+          when: >
+            print is truthy(convert_bool=True)
+            and item.item is defined
+            and (item.skipped is undefined or item.skipped is false)
+            and item.images | length > 0
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo base image date: print error"
+          ansible.builtin.debug:
+            msg: "image not found"
+          loop: "{{ results_image_base_info.results | flatten(levels=1) }}"
+          when: >
+            print is truthy(convert_bool=True)
+            and item.item is defined
+            and (item.skipped is undefined or item.skipped is false)
+            and item.images | length == 0
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo base image date: store"
+          ansible.builtin.set_fact:
+            odoo_base_image_dates: "{{ odoo_base_image_dates | default({}) | combine({item.item.key: item.images.0.Created}) }}"
+            odoo_base_image_hashes: "{{ odoo_base_image_hashes | default({}) | combine({item.item.key: item.images.0.Id}) }}"
+            cacheable: yes
+          loop: "{{ results_image_base_info.results | flatten(levels=1) }}"
+          loop_control:
+            label: "{{ item.item.key }}"
+          when: >
+            item.item is defined
+            and (item.skipped is undefined or item.skipped is false)
+            and item.images | length > 0
+
+    - name: "odoo instance image date"
+      tags:
+        - "odoo_image"
+      block:
+        - name: "odoo instance image date: get"
+          community.docker.docker_image_info:
+            name:
+              - "filament/{{ odoo_instance.key }}:{{ odoo_instance_setup.odoo_version }}"
+          loop: "{{ odoo_instances | dict2items }}"
+          when: selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          register: results_image_info
+
+        - name: "odoo instance image date: print"
+          ansible.builtin.debug:
+            msg: "{{ item.images.0.Created }}"
+          loop: "{{ results_image_info.results | flatten(levels=1) }}"
+          loop_control:
+            label: "{{ item.item.key }}"
+          when: >
+            print is truthy(convert_bool=True)
+            and item.item is defined
+            and (item.skipped is undefined or item.skipped is false)
+            and item.images | length > 0
+
+        - name: "odoo instance image date: store"
+          ansible.builtin.set_fact:
+            odoo_instance_image_dates: "{{ odoo_instance_image_dates | default({}) | combine({item.item.key: item.images.0.Created}) }}"
+            odoo_instance_image_hashes: "{{ odoo_instance_image_hashes | default({}) | combine({item.item.key: item.images.0.Id}) }}"
+            cacheable: yes
+          loop: "{{ results_image_info.results | flatten(levels=1) }}"
+          loop_control:
+            label: "{{ item.item.key }}"
+          when: >
+            item.item is defined
+            and (item.skipped is undefined or item.skipped is false)
+            and item.images | length > 0
+
+    - name: "odoo image upgradable APT packages"
+      tags:
+        - "odoo_image_upgradable"
+        - "odoo_image_upgradable_apt"
+      block:
+        - name: "odoo image upgradable APT packages: get"
+          vars:
+            regex: perl -lne 'if ($4 eq "Debian-Security") {$s="yes"} else {$s="no"} print "\{\"pkg\":\"$1\",\"old_ver\":\"$2\",\"new_ver\":\"$3\",\"security\":\"$s\"\}" while /^Inst ([^\s]+) \[([^\]]+)\] \(([^\s]+) (Debian-Security|)/gi'
+            apt_cmd: apt-get --quiet=2 update && apt-get --simulate --yes --quiet=2 upgrade | {{ regex }} | sort
+          community.docker.docker_container:
+            name: "list_upgradable_package"
+            image: "filament/{{ odoo_instance.key }}:{{ odoo_instance_setup.odoo_version }}"
+            pull: "never"
+            detach: "false"
+            cleanup: "true"
+            user: "root"
+            entrypoint: "/bin/bash"
+            command: -c "echo {{ apt_cmd | b64encode }} | base64 --decode | bash"
+          loop: "{{ odoo_instances | dict2items }}"
+          # Odoo < v14 images no longer support updating. 
+          when: >
+            odoo_instance_source_image_setup.odoo_version | int >= 14
+            and (selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance)
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          register: results_apt
+
+        - name: "odoo image upgradable APT packages: print"
+          ansible.builtin.debug:
+            msg: "{{ item.container.Output }}"
+          loop: "{{ results_apt.results | flatten(levels=1) }}"
+          when: print is truthy(convert_bool=True) and item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo image upgradable APT packages: store"
+          vars:
+            output_in_json: "[{{ item.container.Output | split | join(',') }}]"
+          ansible.builtin.set_fact:
+            odoo_image_upgradable_apt: "{{ odoo_image_upgradable_apt | default({}) | combine({item.item.key: output_in_json}) }}"
+            cacheable: yes
+          loop: "{{ results_apt.results | flatten(levels=1) }}"
+          when: item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+    - name: "odoo image upgradable Pip packages"
+      tags:
+        - "odoo_image_upgradable"
+        - "odoo_image_upgradable_pip"
+      block:
+        - name: "odoo image upgradable Pip packages: get"
+          vars:
+            # Create a regex with only additional pip package names (without version and version operator).
+            regex: "^({{ odoo_instance_source_image_setup.additional_pip_packages | join('\n') | regex_search('^[^><=!~]+', multiline=True) | split | join('|') }})($|\\s|[><=!~])"
+            # Additional pip packages in command line form.
+            pip_package_args: "'{{ odoo_instance_source_image_setup.additional_pip_packages | join(\"' '\") }}'"
+            pip_cmd: "pip install --dry-run --quiet --upgrade --report - --requirement <(sed -E -e '/{{ regex }}/d' /opt/odoo/odoo/requirements.txt) {{ pip_package_args }} 2>/dev/null"
+          community.docker.docker_container:
+            name: "list_upgradable_package"
+            image: "filament/{{ odoo_instance.key }}:{{ odoo_instance_setup.odoo_version }}"
+            pull: "never"
+            detach: "false"
+            cleanup: "true"
+            user: "root"
+            entrypoint: "/bin/bash"
+            command: -c "echo {{ pip_cmd | b64encode }} | base64 --decode | bash"
+          loop: "{{ odoo_instances | dict2items }}"
+          when: >
+            odoo_instance_source_image_setup.odoo_version | int >= 14
+            and (selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance)
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          register: results_pip
+
+        - name: "odoo image upgradable Pip packages: print"
+          ansible.builtin.debug:
+            msg: "{{ item.container.Output | from_json }}"
+          loop: "{{ results_pip.results | flatten(levels=1) }}"
+          when: print is truthy(convert_bool=True) and item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo image upgradable Pip packages: store"
+          vars:
+            output_in_json: "[{{ item.container.Output }}]"
+          ansible.builtin.set_fact:
+            odoo_image_upgradable_pip: "{{ odoo_image_upgradable_pip | default({}) | combine({item.item.key: output_in_json}) }}"
+            cacheable: yes
+          loop: "{{ results_pip.results | flatten(levels=1) }}"
+          when: item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+    - name: "odoo modules in database"
+      tags:
+        - "odoo_modules"
+        - "odoo_modules_in_db"
+      block:
+        - name: "odoo modules in database: get"
+          community.docker.docker_container_exec:
+            container: "{{ odoo_instance.key }}_db"
+            command: >
+              psql --tuples-only -U {{ odoo_instances[odoo_instance.value.prod_instance | default(item.key)].db_user }} {{ odoo_instance.value.db }}
+              --command "
+                SELECT array_to_json(array_agg(row_to_json(t)))
+                FROM (
+                  SELECT
+                    name AS "name",
+                    latest_version AS "version",
+                    state AS "state"
+                  FROM ir_module_module
+                  ORDER BY name ASC
+                ) AS t;"
+          loop: "{{ odoo_instances | dict2items }}"
+          when: selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          register: results_installed
+
+        - name: "odoo modules in database: print"
+          ansible.builtin.debug:
+            msg: "{{ item.stdout }}"
+          loop: "{{ results_installed.results | flatten(levels=1) }}"
+          when: print is truthy(convert_bool=True) and item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo modules in database: store"
+          ansible.builtin.set_fact:
+            odoo_instance_modules_in_db: "{{ odoo_instance_modules_in_db | default({}) | combine({item.item.key: item.stdout | from_json}) }}"
+            cacheable: yes
+          loop: "{{ results_installed.results | flatten(levels=1) }}"
+          when: item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+    - name: "odoo embedded modules"
+      tags:
+        - "odoo_modules"
+        - "odoo_modules_embedded"
+      block:
+        - name: "odoo embedded modules: get ocb commit"
+          community.docker.docker_container_exec:
+            container: "{{ odoo_instance.key }}"
+            command: "/bin/bash -c 'cat $SAVE_COMMITS_DIR/ocb' || echo "
+          loop: "{{ odoo_instances | dict2items }}"
+          when: selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          ignore_errors: true
+          register: results_ocb_commit
+
+        - name: "odoo embedded modules: get ocb modules"
+          community.docker.docker_container_exec:
+            container: "{{ odoo_instance.key }}"
+            command: "ls /opt/odoo/odoo/addons"
+          loop: "{{ odoo_instances | dict2items }}"
+          when: selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          ignore_errors: true
+          register: results_ocb_modules
+
+        - name: "odoo embedded modules: get default_addons"
+          community.docker.docker_container_exec:
+            container: "{{ odoo_instance.key }}"
+            command: "/bin/bash -c 'cat $SAVE_COMMITS_DIR/default_addons' || echo "
+          loop: "{{ odoo_instances | dict2items }}"
+          when: selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          ignore_errors: true
+          register: results_default_addons
+
+        - name: "odoo embedded modules: get custom_addons"
+          community.docker.docker_container_exec:
+            container: "{{ odoo_instance.key }}"
+            command: "/bin/bash -c 'cat $SAVE_COMMITS_DIR/custom_addons || echo '"
+          loop: "{{ odoo_instances | dict2items }}"
+          when: selected_odoo_instance is undefined or odoo_instance.key == selected_odoo_instance
+          loop_control:
+            label: "{{ odoo_instance.key }}"
+          ignore_errors: true
+          register: results_custom_addons
+
+        - name: "odoo embedded modules: print ocb commit"
+          ansible.builtin.debug:
+            msg: "{{ item.stdout }}"
+          loop: "{{ results_ocb_commit.results | flatten(levels=1) }}"
+          when: print is truthy(convert_bool=True) and item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo embedded modules: print default_addons"
+          ansible.builtin.debug:
+            msg: "{{ item.stdout }}"
+          loop: "{{ results_default_addons.results | flatten(levels=1) }}"
+          when: print is truthy(convert_bool=True) and item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo embedded modules: print custom_addons"
+          ansible.builtin.debug:
+            msg: "{{ item.stdout }}"
+          loop: "{{ results_custom_addons.results | flatten(levels=1) }}"
+          when: print is truthy(convert_bool=True) and item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo embedded modules: store ocb commit"
+          ansible.builtin.set_fact:
+            odoo_instance_modules_embedded_ocb_commit: "{{ odoo_instance_modules_embedded_ocb_commit | default({}) | combine({item.item.key: item.stdout}) }}"
+            cacheable: yes
+          loop: "{{ results_ocb_commit.results | flatten(levels=1) }}"
+          when: item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo embedded modules: store ocb modules"
+          ansible.builtin.set_fact:
+            odoo_instance_modules_embedded_ocb_modules: "{{ odoo_instance_modules_embedded_ocb_modules | default({}) | combine({item.item.key: item.stdout}) }}"
+            cacheable: yes
+          loop: "{{ results_ocb_modules.results | flatten(levels=1) }}"
+          when: item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo embedded modules: store default_addons"
+          ansible.builtin.set_fact:
+            odoo_instance_modules_embedded_default_addons: "{{ odoo_instance_modules_embedded_default_addons | default({}) | combine({item.item.key: item.stdout}) }}"
+            cacheable: yes
+          loop: "{{ results_default_addons.results | flatten(levels=1) }}"
+          when: item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+        - name: "odoo embedded modules: store custom_addons"
+          ansible.builtin.set_fact:
+            odoo_instance_modules_embedded_custom_addons: "{{ odoo_instance_modules_embedded_custom_addons | default({}) | combine({item.item.key: item.stdout}) }}"
+            cacheable: yes
+          loop: "{{ results_custom_addons.results | flatten(levels=1) }}"
+          when: item.item is defined and item.changed is defined and item.changed
+          loop_control:
+            label: "{{ item.item.key }}"
+
+
+- hosts: "docker_nextcloud"
+  name: "additional facts"
+  gather_facts: false
+  vars:
+    print: false
+  tags:
+    - "nextcloud"
+  tasks:
+    - name: "nextcloud version"
+      tags:
+        - "nextcloud_version"
+      when: "'docker_nextcloud' in group_names"
+      block:
+        - name: "nextcloud version: get"
+          ansible.builtin.shell:
+            cmd: "docker exec --user www-data nextcloud php occ list --version | grep -Po '\\d+\\.\\d+\\.\\d+'"
+          register: nextcloud_version
+
+        - name: "nextcloud version: print"
+          when: print is truthy(convert_bool=True)
+          ansible.builtin.debug:
+            msg: "{{ nextcloud_version.stdout }}"
+
+        - name: "nextcloud version: store"
+          ansible.builtin.set_fact:
+            nextcloud_version: "{{ nextcloud_version.stdout }}"
+            cacheable: yes
+
+    - name: "nextcloud addons version"
+      when: "'docker_nextcloud' in group_names"
+      tags:
+        - "nextcloud_addons"
+        - "never"
+      block:
+        - name: "nextcloud addons: get shipped"
+          ansible.builtin.shell:
+            cmd: "docker exec --user www-data nextcloud php occ app:list --shipped=true --output=json"
+          register: nextcloud_addons_shipped
+        - name: "nextcloud addons: store shipped"
+          ansible.builtin.set_fact:
+            nextcloud_addons_shipped: "{{ nextcloud_addons_shipped.stdout }}"
+            cacheable: yes
+        - name: "nextcloud addons: get not shipped"
+          ansible.builtin.shell:
+            cmd: "docker exec --user www-data nextcloud php occ app:list --shipped=false --output=json"
+          register: nextcloud_addons_not_shipped
+        - name: "nextcloud addons: store not shipped"
+          ansible.builtin.set_fact:
+            nextcloud_addons_not_shipped: "{{ nextcloud_addons_not_shipped.stdout }}"
+            cacheable: yes

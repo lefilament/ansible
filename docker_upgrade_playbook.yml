@@ -104,7 +104,7 @@
         community.docker.docker_compose:
             project_src: /home/docker/nextcloud
             pull: true
-        async: 120
+        async: 600
         poll: 10
         when: inventory_hostname in groups.docker_nextcloud and not ansible_check_mode
         tags: upgrade_nextcloud
